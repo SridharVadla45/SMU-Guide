@@ -1,0 +1,21 @@
+{
+  "name": "smu-guide",
+  "version": "1.0.0",
+  "description": "The Student Mentor Guide is a web-based platform that connects university students with mentors, including alumni and professors. The system allows students to browse mentor profiles, book Zoom meetings, ask questions through a community forum, and send direct messages for quick support. Built with a Node.js + TypeScript backend and modern frontend, the platform ensures smooth scheduling, secure authentication, and an easy-to-use interface for effective academic guidance and mentorship.",
+  "homepage": "https://github.com/SridharVadla45/SMU-Guide#readme",
+  "bugs": {
+    "url": "https://github.com/SridharVadla45/SMU-Guide/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SridharVadla45/SMU-Guide.git"
+  },
+  "license": "ISC",
+  "author": "Sridhar Vadla",
+  "private": true,
+  "workspaces": [
+    "apps/backend",
+    "apps/frontend"
+  ],
+  "scripts": {}
+}
