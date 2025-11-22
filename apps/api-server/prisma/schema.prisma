@@ -1,0 +1,202 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+// =========================
+// Enums
+// =========================
+
+enum Role {
+  STUDENT
+  MENTOR
+  PROFESSOR
+  ADMIN
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+// =========================
+// Core: User
+// =========================
+
+model User {
+  id         Int      @id @default(autoincrement())
+  name       String
+  email      String   @unique
+  password   String
+  role       Role
+  department String?
+  bio        String?
+  avatarUrl  String?
+  createdAt  DateTime @default(now())
+
+  // Mentor 1:1
+  mentorProfile MentorProfile?
+
+  // Appointments
+  appointmentsAsStudent Appointment[] @relation("StudentAppointments")
+  appointmentsAsMentor  Appointment[] @relation("MentorAppointments")
+
+  // Forum
+  questions Question[]
+  answers   Answer[]
+
+  // Messaging
+  conversationParticipants ConversationParticipant[]
+  messagesSent             Message[]                 @relation("MessagesSent")
+}
+
+// =========================
+// Mentor Profile & Availability
+// =========================
+
+model MentorProfile {
+  id             Int      @id @default(autoincrement())
+  userId         Int      @unique
+  graduationYear Int?
+  currentCompany String?
+  currentRole    String?
+  bioExtended    String?
+  createdAt      DateTime @default(now())
+
+  user           User                 @relation(fields: [userId], references: [id])
+  availabilities MentorAvailability[]
+  zoomCredential ZoomCredential?
+}
+
+model MentorAvailability {
+  id              Int      @id @default(autoincrement())
+  mentorProfileId Int
+  dayOfWeek       Int // 0-6
+  startTime       String // "09:00"
+  endTime         String // "11:00"
+  createdAt       DateTime @default(now())
+
+  mentorProfile MentorProfile @relation(fields: [mentorProfileId], references: [id])
+}
+
+// =========================
+// Appointments (Student ↔ Mentor)
+// =========================
+
+model Appointment {
+  id        Int               @id @default(autoincrement())
+  studentId Int
+  mentorId  Int
+  startsAt  DateTime
+  endsAt    DateTime
+  status    AppointmentStatus @default(PENDING)
+
+  zoomMeetingId String?
+  zoomJoinUrl   String?
+  zoomStartUrl  String?
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  student User @relation("StudentAppointments", fields: [studentId], references: [id])
+  mentor  User @relation("MentorAppointments", fields: [mentorId], references: [id])
+}
+
+// =========================
+// Zoom Credentials (1:1 with MentorProfile)
+// =========================
+
+model ZoomCredential {
+  id              Int @id @default(autoincrement())
+  mentorProfileId Int @unique
+
+  zoomUserId   String
+  accessToken  String
+  refreshToken String
+  expiresAt    DateTime
+
+  createdAt DateTime @default(now())
+
+  mentorProfile MentorProfile @relation(fields: [mentorProfileId], references: [id])
+}
+
+// =========================
+// Forum: Topics → Questions → Answers
+// =========================
+
+model Topic {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  createdAt   DateTime @default(now())
+
+  questions Question[]
+}
+
+model Question {
+  id        Int      @id @default(autoincrement())
+  title     String
+  body      String
+  topicId   Int
+  askedById Int
+  createdAt DateTime @default(now())
+
+  topic   Topic @relation(fields: [topicId], references: [id])
+  askedBy User  @relation(fields: [askedById], references: [id])
+
+  answers Answer[]
+}
+
+model Answer {
+  id           Int      @id @default(autoincrement())
+  questionId   Int
+  answeredById Int
+  body         String
+  createdAt    DateTime @default(now())
+  isAccepted   Boolean  @default(false)
+
+  question   Question @relation(fields: [questionId], references: [id])
+  answeredBy User     @relation(fields: [answeredById], references: [id])
+}
+
+// =========================
+// Messaging: Conversations, Participants, Messages
+// =========================
+
+model Conversation {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+
+  participants ConversationParticipant[]
+  messages     Message[]
+}
+
+model ConversationParticipant {
+  id             Int      @id @default(autoincrement())
+  conversationId Int
+  userId         Int
+  joinedAt       DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
+
+  @@unique([conversationId, userId])
+}
+
+model Message {
+  id             Int       @id @default(autoincrement())
+  conversationId Int
+  senderId       Int
+  content        String
+  createdAt      DateTime  @default(now())
+  readAt         DateTime?
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+  sender       User         @relation("MessagesSent", fields: [senderId], references: [id])
+}

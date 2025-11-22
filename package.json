@@ -14,8 +14,8 @@
   "author": "Sridhar Vadla",
   "private": true,
   "workspaces": [
-    "apps/backend",
-    "apps/frontend"
+    "apps/api-server",
+    "apps/web-server"
   ],
   "scripts": {}
 }
