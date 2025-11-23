@@ -1,11 +1,26 @@
+// src/app.ts
 import express from "express";
+import cors from "cors";
+import morgan from "morgan";
+import { authRouter as authRoutes } from "./routes/auth.routes.js";
+import { globalErrorHandler } from "./errors/errorHandler.js";
+import { ApiError, Errors } from "./errors/ApiError.js";
 
 const app = express();
 
+// Global middlewares
+app.use(cors());
+app.use(morgan("dev"));
 app.use(express.json());
 
-app.get("/health", (_req, res) => {
-  res.json({ status: "ok" });
+// Routes
+app.use("/api/auth", authRoutes);
+
+// 404 handler for unknown routes
+app.use((req, res) => {
+  res.status(404).json({ message: "Route not found" });
 });
 
-export default app;
+app.use(globalErrorHandler);
+
+export { app };
