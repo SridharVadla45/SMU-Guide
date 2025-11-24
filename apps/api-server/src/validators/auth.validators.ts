@@ -16,7 +16,7 @@ export const validateRegisterInput = (body: any): RegisterInput => {
     throw Errors.Validation("Password must be at least 6 characters");
   }
 
-  const allowedRoles = ["STUDENT", "MENTOR", "ADMIN"];
+  const allowedRoles = ["STUDENT", "MENTOR", "ADMIN","PROFESSOR"];
   if (role && !allowedRoles.includes(role)) {
     throw Errors.Validation("Invalid role");
   }
