@@ -1,5 +1,5 @@
 trigger:
-  - main   # use your default branch name
+  - main
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -7,34 +7,30 @@ pool:
 steps:
   - checkout: self
 
-  # Install Terraform on build agent
-  - task: TerraformInstaller@1
-    displayName: 'Install Terraform'
-    inputs:
-      terraformVersion: '1.9.8'
+  # Install Terraform manually
+  - script: |
+      sudo apt-get update
+      sudo apt-get install -y wget unzip
+      wget https://releases.hashicorp.com/terraform/1.9.8/terraform_1.9.8_linux_amd64.zip
+      unzip terraform_1.9.8_linux_amd64.zip
+      sudo mv terraform /usr/local/bin/
+      terraform -version
+    displayName: "Install Terraform"
 
-  # Run Terraform using Azure service connection
+  # Run Terraform inside Azure CLI context
   - task: AzureCLI@2
-    displayName: 'Terraform init/plan/apply'
+    displayName: "Terraform init/plan/apply"
     inputs:
-      azureSubscription: 'smu-guide-azure-sp'   # service connection name
-      scriptType: 'bash'
-      scriptLocation: 'inlineScript'
-      workingDirectory: '$(System.DefaultWorkingDirectory)/infra'
+      azureSubscription: "AzureARM"   # your service connection name
+      scriptType: bash
+      scriptLocation: inlineScript
+      workingDirectory: "$(System.DefaultWorkingDirectory)/infra"
       inlineScript: |
-        echo "Terraform version:"
-        terraform -version
-
-        echo "Running terraform init..."
         terraform init -input=false
-
-        echo "Running terraform plan..."
         terraform plan -input=false
 
-        # Apply only on main branch
         if [ "$(Build.SourceBranch)" = "refs/heads/main" ]; then
-          echo "Running terraform apply..."
           terraform apply -auto-approve -input=false
         else
-          echo "Not on main branch, skipping apply."
+          echo "Not on main branch, skipping apply"
         fi
