@@ -21,7 +21,7 @@ steps:
   - task: AzureCLI@2
     displayName: "Terraform init/plan/apply"
     inputs:
-      azureSubscription: "AzureARM"   # your service connection name
+      azureSubscription: "smu-guide-azure-sp"   # your service connection name
       scriptType: bash
       scriptLocation: inlineScript
       workingDirectory: "$(System.DefaultWorkingDirectory)/infra"
