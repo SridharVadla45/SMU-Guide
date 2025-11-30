@@ -1,0 +1,40 @@
+trigger:
+  - main   # use your default branch name
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+  - checkout: self
+
+  # Install Terraform on build agent
+  - task: TerraformInstaller@1
+    displayName: 'Install Terraform'
+    inputs:
+      terraformVersion: '1.9.8'
+
+  # Run Terraform using Azure service connection
+  - task: AzureCLI@2
+    displayName: 'Terraform init/plan/apply'
+    inputs:
+      azureSubscription: 'smu-guide-azure-sp'   # service connection name
+      scriptType: 'bash'
+      scriptLocation: 'inlineScript'
+      workingDirectory: '$(System.DefaultWorkingDirectory)/infra'
+      inlineScript: |
+        echo "Terraform version:"
+        terraform -version
+
+        echo "Running terraform init..."
+        terraform init -input=false
+
+        echo "Running terraform plan..."
+        terraform plan -input=false
+
+        # Apply only on main branch
+        if [ "$(Build.SourceBranch)" = "refs/heads/main" ]; then
+          echo "Running terraform apply..."
+          terraform apply -auto-approve -input=false
+        else
+          echo "Not on main branch, skipping apply."
+        fi
