@@ -9,6 +9,7 @@ import { ApiError, Errors } from "./errors/ApiError.js";
 import { availabilityRoutes } from "./routes/availability.routes.js";
 import { appointmentRoutes } from "./routes/appointment.routes.js";
 import { forumRoutes } from "./routes/forum.routes.js";
+import { messagingRoutes } from "./routes/messaging.routes.js";
 
 const app = express();
 
@@ -23,6 +24,8 @@ app.use("/api/mentors", mentorRouter);
 app.use("/api/mentors", availabilityRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/forum", forumRoutes);
+app.use("/api/messages", messagingRoutes);
+
 
 
 // 404 handler for unknown routes
