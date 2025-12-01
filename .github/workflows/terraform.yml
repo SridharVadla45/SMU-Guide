@@ -1,0 +1,45 @@
+name: Terraform Azure CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+
+      - name: Azure Login (Service Principal)
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Terraform Init
+        working-directory: ./infra
+        run: terraform init -input=false
+
+      - name: Terraform Plan
+        working-directory: ./infra
+        run: terraform plan -input=false
+
+      - name: Terraform Apply (main branch only)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        working-directory: ./infra
+        run: terraform apply -auto-approve -input=false
