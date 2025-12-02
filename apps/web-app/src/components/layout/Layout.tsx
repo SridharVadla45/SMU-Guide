@@ -1,4 +1,4 @@
-import React from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
     LayoutDashboard,
@@ -9,6 +9,8 @@ import {
     LogOut,
     GraduationCap,
 } from 'lucide-react';
+import { apiClient } from '../../api/client';
+import type { User } from '../../types';
 
 interface LayoutProps {
     children: React.ReactNode;
@@ -41,7 +43,20 @@ const SidebarItem = ({
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
     const location = useLocation();
-    const [isProfileOpen, setIsProfileOpen] = React.useState(false);
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [user, setUser] = useState<User | null>(null);
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            try {
+                const userData = await apiClient.getMe();
+                setUser(userData);
+            } catch (error) {
+                console.error('Error fetching user:', error);
+            }
+        };
+        fetchUser();
+    }, []);
 
     const navItems = [
         { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -50,6 +65,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { path: '/forum', label: 'Forum', icon: MessageSquare },
         { path: '/messages', label: 'Messages', icon: MessageCircle },
     ];
+
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+    };
 
     return (
         <div className="min-h-screen bg-gray-50 flex font-sans">
@@ -75,7 +95,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 </nav>
 
                 <div className="p-4 border-t border-gray-100">
-                    <button className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors w-full">
+                    <button
+                        onClick={handleLogout}
+                        className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors w-full"
+                    >
                         <LogOut className="w-5 h-5" />
                         Logout
                     </button>
@@ -84,7 +107,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
             {/* Main Content */}
             <main className="flex-1 ml-64 min-h-screen flex flex-col">
-                {/* Header */}
                 {/* Header */}
                 <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8 sticky top-0 z-10">
                     <div>
@@ -96,11 +118,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             className="flex items-center gap-4 focus:outline-none"
                         >
                             <div className="text-right hidden sm:block">
-                                <p className="text-sm font-semibold text-gray-900">Sridhar Vadla</p>
-                                <p className="text-xs text-gray-500">Student</p>
+                                <p className="text-sm font-semibold text-gray-900">
+                                    {user?.name || 'Loading...'}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                    {user?.role || ''}
+                                </p>
                             </div>
                             <img
-                                src="https://api.dicebear.com/7.x/avataaars/svg?seed=Sridhar"
+                                src={user?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'User'}`}
                                 alt="Profile"
                                 className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200"
                             />
@@ -115,13 +141,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                                 >
                                     Profile
                                 </Link>
-                                <Link
-                                    to="/login"
-                                    className="block px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                                    onClick={() => setIsProfileOpen(false)}
+                                <button
+                                    onClick={() => {
+                                        setIsProfileOpen(false);
+                                        handleLogout();
+                                    }}
+                                    className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                                 >
                                     Logout
-                                </Link>
+                                </button>
                             </div>
                         )}
                     </div>
