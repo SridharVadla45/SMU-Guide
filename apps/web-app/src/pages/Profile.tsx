@@ -10,7 +10,7 @@ const Profile = () => {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const data = await apiClient.getUserById(1); // Assume logged in as user 1
+                const data = await apiClient.getMe();
                 setUser(data || null);
             } catch (error) {
                 console.error('Error fetching user profile:', error);
