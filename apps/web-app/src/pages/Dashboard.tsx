@@ -13,15 +13,17 @@ const Dashboard = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [usersData, appointmentsData, mentorsResponse, questionsResponse] = await Promise.all([
+                const [usersData, appointmentsResponse, mentorsResponse, questionsResponse] = await Promise.all([
                     apiClient.getMe(),
-                    apiClient.getAppointmentsForUser(1),
+                    apiClient.getAppointments(),
                     apiClient.getMentorProfiles(),
                     apiClient.getQuestions(),
                 ]);
 
                 setUser(usersData || null);
-                setAppointments(appointmentsData);
+                // Handle paginated response for appointments
+                const appointmentsArray = Array.isArray(appointmentsResponse) ? appointmentsResponse : (appointmentsResponse as any)?.data || [];
+                setAppointments(appointmentsArray);
                 // Handle paginated response - extract data array
                 const mentorsArray = Array.isArray(mentorsResponse) ? mentorsResponse : (mentorsResponse as any)?.data || [];
                 const questionsArray = Array.isArray(questionsResponse) ? questionsResponse : (questionsResponse as any)?.data || [];
