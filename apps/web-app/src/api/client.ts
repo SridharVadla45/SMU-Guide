@@ -17,6 +17,9 @@ const headers = () => {
     return {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
     };
 };
 
@@ -48,10 +51,11 @@ export const apiClient = {
     },
 
     register: async (data: any) => {
+        const isFormData = data instanceof FormData;
         const response = await fetch(`${API_BASE_URL}/auth/register`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
+            headers: isFormData ? {} : { 'Content-Type': 'application/json' },
+            body: isFormData ? data : JSON.stringify(data),
         });
         const result = await handleResponse(response);
         // Register returns {token, user}, store token
@@ -59,6 +63,22 @@ export const apiClient = {
             localStorage.setItem('token', result.token);
         }
         return result;
+    },
+
+    updateProfile: async (data: any): Promise<User> => {
+        const isFormData = data instanceof FormData;
+        const response = await fetch(`${API_BASE_URL}/users/profile`, {
+            method: 'PUT',
+            headers: {
+                ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+                'Authorization': `Bearer ${getAuthToken()}`,
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0',
+            },
+            body: isFormData ? data : JSON.stringify(data),
+        });
+        return handleResponse(response);
     },
 
     getMe: async (): Promise<User> => {

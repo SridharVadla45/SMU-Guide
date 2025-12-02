@@ -9,6 +9,7 @@ const toAuthUser = (user: any): AuthUser => ({
   name: user.name,
   email: user.email,
   role: user.role,
+  avatarUrl: user.avatarUrl,
 });
 
 export const authService = {
@@ -23,8 +24,9 @@ export const authService = {
     const user = await authRepository.createUser({
       name: input.name,
       email: input.email,
-      password:passwordHash,
+      password: passwordHash,
       role: input.role || "STUDENT",
+      avatarUrl: input.avatarUrl,
     });
 
     const authUser = toAuthUser(user);
@@ -33,6 +35,7 @@ export const authService = {
       userId: authUser.id,
       email: authUser.email,
       role: authUser.role,
+      avatarUrl: authUser.avatarUrl,
     });
 
     return { token, user: authUser };
@@ -56,6 +59,7 @@ export const authService = {
       userId: authUser.id,
       email: authUser.email,
       role: authUser.role,
+      avatarUrl: authUser.avatarUrl,
     });
 
     return { token, user: authUser };

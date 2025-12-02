@@ -5,6 +5,7 @@ export interface RegisterInput {
   email: string;
   password: string;
   role?: UserRole; // default STUDENT
+  avatarUrl?: string;
 }
 
 export interface LoginInput {
@@ -17,6 +18,7 @@ export interface AuthUser {
   name: string;
   email: string;
   role: UserRole;
+  avatarUrl?: string | null;
 }
 
 export interface AuthResponse {

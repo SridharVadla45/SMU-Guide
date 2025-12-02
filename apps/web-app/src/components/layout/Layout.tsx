@@ -9,6 +9,7 @@ import {
     GraduationCap,
 } from 'lucide-react';
 import { apiClient } from '../../api/client';
+import { API_URL } from '../../config';
 import type { User } from '../../types';
 
 interface LayoutProps {
@@ -124,7 +125,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                                 </p>
                             </div>
                             <img
-                                src={user?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'User'}`}
+                                src={user?.avatarUrl ? (user.avatarUrl.startsWith('http') ? user.avatarUrl : `${API_URL}${user.avatarUrl}`) : `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'User'}`}
                                 alt="Profile"
                                 className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200"
                             />

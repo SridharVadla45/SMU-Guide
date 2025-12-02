@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { apiClient } from '../api/client';
 import type { User } from '../types';
 import { Mail, BookOpen, Calendar, MapPin } from 'lucide-react';

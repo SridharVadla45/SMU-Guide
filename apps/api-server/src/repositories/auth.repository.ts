@@ -1,7 +1,7 @@
 // src/modules/auth/auth.repository.ts
 import { prisma } from "../lib/prisma.js";
 import { RegisterInput } from "../types/auth.types.js";
-import {UserRole} from "../types/auth.types.js"
+import { UserRole } from "../types/auth.types.js"
 
 export const authRepository = {
   findUserByEmail: async (email: string) => {
@@ -15,6 +15,7 @@ export const authRepository = {
     email: string;
     password: string;
     role: UserRole;
+    avatarUrl?: string;
   }) => {
     return prisma.user.create({
       data,

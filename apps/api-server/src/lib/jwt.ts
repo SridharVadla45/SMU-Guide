@@ -5,13 +5,15 @@ export interface JwtPayload {
   userId: string;
   email: string;
   role: string;
+  avatarUrl?: string | null;
 }
 
 export const signToken = (payload: JwtPayload): string => {
   return jwt.sign(
     payload as object,
     env.jwtSecret as jwt.Secret,
-    { expiresIn: 60 * 60 * 24 * 7, // 7 days
+    {
+      expiresIn: 60 * 60 * 24 * 7, // 7 days
     }
   );
 };

@@ -11,11 +11,18 @@ const Register = () => {
         confirmPassword: '',
         role: '',
     });
+    const [avatar, setAvatar] = useState<File | null>(null);
     const [error, setError] = useState('');
     const navigate = useNavigate();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setAvatar(e.target.files[0]);
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -28,12 +35,16 @@ const Register = () => {
         }
 
         try {
-            const response = await apiClient.register({
-                name: formData.fullName,
-                email: formData.email,
-                password: formData.password,
-                role: formData.role,
-            });
+            const data = new FormData();
+            data.append('name', formData.fullName);
+            data.append('email', formData.email);
+            data.append('password', formData.password);
+            data.append('role', formData.role);
+            if (avatar) {
+                data.append('avatar', avatar);
+            }
+
+            const response = await apiClient.register(data);
             if (response.token) {
                 localStorage.setItem('token', response.token);
                 navigate('/dashboard');
@@ -160,6 +171,22 @@ const Register = () => {
                                     <option value={'MENTOR'}>Mentor</option>
                                     <option value={'PROFESSOR'}>Professor</option>
                                 </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label htmlFor="avatar" className="block text-sm font-medium text-gray-700">
+                                Profile Photo (Optional)
+                            </label>
+                            <div className="mt-1">
+                                <input
+                                    id="avatar"
+                                    name="avatar"
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleFileChange}
+                                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-gray-50"
+                                />
                             </div>
                         </div>
 

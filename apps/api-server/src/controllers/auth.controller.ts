@@ -7,6 +7,13 @@ export const authController = {
   register: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const input = validateRegisterInput(req.body);
+
+      if (req.file) {
+        // Construct the full URL or relative path for the avatar
+        // Assuming the server serves 'uploads' statically or we store the relative path
+        input.avatarUrl = `/uploads/avatars/${req.file.filename}`;
+      }
+
       const result = await authService.register(input);
       res.status(201).json({
         success: true,
