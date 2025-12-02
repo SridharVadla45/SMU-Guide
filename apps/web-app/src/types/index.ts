@@ -1,16 +1,6 @@
-export enum Role {
-  STUDENT = 'STUDENT',
-  MENTOR = 'MENTOR',
-  PROFESSOR = 'PROFESSOR',
-  ADMIN = 'ADMIN',
-}
+export type Role = 'STUDENT' | 'MENTOR' | 'PROFESSOR' | 'ADMIN';
 
-export enum AppointmentStatus {
-  PENDING = 'PENDING',
-  CONFIRMED = 'CONFIRMED',
-  CANCELLED = 'CANCELLED',
-  COMPLETED = 'COMPLETED',
-}
+export type AppointmentStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
 
 export interface User {
   id: number;
