@@ -13,7 +13,7 @@ const Dashboard = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [usersData, appointmentsData, mentorsData, questionsData] = await Promise.all([
+                const [usersData, appointmentsData, mentorsResponse, questionsResponse] = await Promise.all([
                     apiClient.getMe(),
                     apiClient.getAppointmentsForUser(1),
                     apiClient.getMentorProfiles(),
@@ -22,8 +22,11 @@ const Dashboard = () => {
 
                 setUser(usersData || null);
                 setAppointments(appointmentsData);
-                setMentors(mentorsData.slice(0, 3)); // Show top 3
-                setQuestions(questionsData.slice(0, 3)); // Show top 3
+                // Handle paginated response - extract data array
+                const mentorsArray = Array.isArray(mentorsResponse) ? mentorsResponse : (mentorsResponse as any)?.data || [];
+                const questionsArray = Array.isArray(questionsResponse) ? questionsResponse : (questionsResponse as any)?.data || [];
+                setMentors(mentorsArray.slice(0, 3)); // Show top 3
+                setQuestions(questionsArray.slice(0, 3)); // Show top 3
             } catch (error) {
                 console.error('Error fetching dashboard data:', error);
             } finally {
