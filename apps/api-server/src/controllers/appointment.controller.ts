@@ -1,172 +1,102 @@
-// src/controllers/appointment.controllers.ts
 import { Request, Response, NextFunction } from "express";
-import { appointmentService } from "../services/appointment.services.js";
-import {
-  validateCreateAppointment,
-  validateMyAppointmentsQuery,
-  parseIdParam,
-} from "../validators/appointment.validators.js";
+import { appointmentService } from "../services/appointment.service.js";
 import { Errors } from "../errors/ApiError.js";
-import { Role } from "@prisma/client";
+import { AppointmentStatus } from "@prisma/client";
 
 export const appointmentController = {
-  // POST /api/appointments
-  createAppointment: async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
-    try {
-      const authUser = (req as any).user as {
-        id: number;
-        role: Role;
-      } | undefined;
+    createAppointment: async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = (req as any).user?.id;
+            const userRole = (req as any).user?.role;
 
-      if (!authUser) {
-        throw Errors.Unauthorized("Unauthorized", "UNAUTHORIZED");
-      }
+            if (!userId) throw Errors.Unauthorized("Not authenticated");
+            if (userRole !== "STUDENT") throw Errors.Forbidden("Only students can book appointments");
 
-      const input = validateCreateAppointment(req.body);
+            const result = await appointmentService.createAppointment(userId, req.body);
+            res.status(201).json({ data: result });
+        } catch (err) {
+            next(err);
+        }
+    },
 
-      const appointment = await appointmentService.createAppointment(
-        { id: authUser.id, role: authUser.role },
-        input
-      );
+    listAppointments: async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = (req as any).user?.id;
+            const userRole = (req as any).user?.role;
 
-      res.status(201).json({
-        success: true,
-        data: appointment,
-      });
-    } catch (err) {
-      next(err);
-    }
-  },
+            if (!userId) throw Errors.Unauthorized("Not authenticated");
 
-  // GET /api/appointments/my
-  getMyAppointments: async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
-    try {
-      const authUser = (req as any).user as {
-        id: number;
-        role: Role;
-      } | undefined;
+            const page = Number(req.query.page) || 1;
+            const limit = Number(req.query.limit) || 10;
+            const status = req.query.status as AppointmentStatus | undefined;
 
-      if (!authUser) {
-        throw Errors.Unauthorized("Unauthorized", "UNAUTHORIZED");
-      }
+            const result = await appointmentService.listAppointments({
+                userId,
+                userRole,
+                page,
+                limit,
+                status,
+            });
 
-      const filter = validateMyAppointmentsQuery(req.query);
+            res.json(result);
+        } catch (err) {
+            next(err);
+        }
+    },
 
-      const items = await appointmentService.getMyAppointments(
-        { id: authUser.id, role: authUser.role },
-        filter
-      );
+    getAppointmentById: async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = (req as any).user?.id;
+            if (!userId) throw Errors.Unauthorized("Not authenticated");
 
-      res.json({
-        success: true,
-        data: items,
-      });
-    } catch (err) {
-      next(err);
-    }
-  },
+            const id = Number(req.params.appointmentId);
+            const result = await appointmentService.getAppointmentById(id, userId);
 
-  // GET /api/appointments/:id
-  getAppointmentById: async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
-    try {
-      const authUser = (req as any).user as {
-        id: number;
-        role: Role;
-      } | undefined;
+            res.json({ data: result });
+        } catch (err) {
+            next(err);
+        }
+    },
 
-      if (!authUser) {
-        throw Errors.Unauthorized("Unauthorized", "UNAUTHORIZED");
-      }
+    cancelAppointment: async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = (req as any).user?.id;
+            if (!userId) throw Errors.Unauthorized("Not authenticated");
 
-      const id = parseIdParam(req.params.id, "id");
+            const id = Number(req.params.appointmentId);
+            const result = await appointmentService.cancelAppointment(id, userId);
 
-      const appointment = await appointmentService.getAppointmentById(
-        { id: authUser.id, role: authUser.role },
-        id
-      );
+            res.json({ data: result });
+        } catch (err) {
+            next(err);
+        }
+    },
 
-      res.json({
-        success: true,
-        data: appointment,
-      });
-    } catch (err) {
-      next(err);
-    }
-  },
+    completeAppointment: async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = (req as any).user?.id;
+            if (!userId) throw Errors.Unauthorized("Not authenticated");
 
-  // PUT /api/appointments/:id/cancel
-  cancelAppointment: async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
-    try {
-      const authUser = (req as any).user as {
-        id: number;
-        role: Role;
-      } | undefined;
+            const id = Number(req.params.appointmentId);
+            const result = await appointmentService.completeAppointment(id, userId);
 
-      if (!authUser) {
-        throw Errors.Unauthorized("Unauthorized", "UNAUTHORIZED");
-      }
+            res.json({ data: result });
+        } catch (err) {
+            next(err);
+        }
+    },
 
-      const id = parseIdParam(req.params.id, "id");
+    confirmAppointment: async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = (req as any).user?.id;
+            if (!userId) throw Errors.Unauthorized("Not authenticated");
 
-      const appointment = await appointmentService.cancelAppointment(
-        { id: authUser.id, role: authUser.role },
-        id
-      );
+            const id = Number(req.params.appointmentId);
+            const result = await appointmentService.confirmAppointment(id, userId);
 
-      res.json({
-        success: true,
-        data: appointment,
-      });
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  // PUT /api/appointments/:id/complete
-  completeAppointment: async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
-    try {
-      const authUser = (req as any).user as {
-        id: number;
-        role: Role;
-      } | undefined;
-
-      if (!authUser) {
-        throw Errors.Unauthorized("Unauthorized", "UNAUTHORIZED");
-      }
-
-      const id = parseIdParam(req.params.id, "id");
-
-      const appointment = await appointmentService.completeAppointment(
-        { id: authUser.id, role: authUser.role },
-        id
-      );
-
-      res.json({
-        success: true,
-        data: appointment,
-      });
-    } catch (err) {
-      next(err);
-    }
-  },
+            res.json({ data: result });
+        } catch (err) {
+            next(err);
+        }
+    },
 };
