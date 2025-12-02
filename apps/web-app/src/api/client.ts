@@ -92,7 +92,7 @@ export const apiClient = {
 
     // Appointments
     getAppointments: async (): Promise<Appointment[]> => {
-        const response = await fetch(`${API_BASE_URL}/appointments/my`, {
+        const response = await fetch(`${API_BASE_URL}/appointments`, {
             headers: headers(),
         });
         return handleResponse(response);
