@@ -1,63 +1,115 @@
-import { Errors } from "../errors/ApiError.js";
 import { mentorRepository } from "../repositories/mentor.repository.js";
-import {
-  MentorAvailabilitySlotInput,
-  MentorFilter,
-  UpsertMentorProfileInput,
-} from "../types/mentor.types.js";
+import { Errors } from "../errors/ApiError.js";
+import { Prisma } from "@prisma/client";
 
 export const mentorService = {
-  listMentors: async (filter: MentorFilter) => {
-    const [items, total] = await Promise.all([
-      mentorRepository.findMentors(filter),
-      mentorRepository.countMentors(filter),
-    ]);
+    listMentors: async (params: {
+        page: number;
+        limit: number;
+        search?: string;
+        department?: string;
+    }) => {
+        const { page, limit, search, department } = params;
+        const skip = (page - 1) * limit;
 
-    return {
-      items,
-      total,
-      page: filter.page || 1,
-      limit: filter.limit || 10,
-    };
-  },
+        const where: Prisma.UserWhereInput = {};
 
-  getMentorById: async (mentorId: number) => {
-    const mentor = await mentorRepository.findMentorById(mentorId);
-    if (!mentor) {
-      throw Errors.NotFound("Mentor not found", "MENTOR_NOT_FOUND");
+        if (search) {
+            where.OR = [
+                { name: { contains: search } },
+                { email: { contains: search } },
+            ];
+        }
+
+        if (department) {
+            where.department = department;
+        }
+
+        const [mentors, total] = await Promise.all([
+            mentorRepository.findAll({ skip, take: limit, where }),
+            mentorRepository.count(where),
+        ]);
+
+        return {
+            data: mentors,
+            meta: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit),
+            },
+        };
+    },
+
+    getMentorById: async (id: number) => {
+        const mentor = await mentorRepository.findById(id);
+        if (!mentor) {
+            throw Errors.NotFound("Mentor not found");
+        }
+        if (mentor.role !== "MENTOR") {
+            throw Errors.NotFound("User is not a mentor");
+        }
+        return mentor;
+    },
+
+    getMentorAvailability: async (mentorId: number) => {
+        const mentor = await mentorRepository.findById(mentorId);
+        if (!mentor || !mentor.mentorProfile) {
+            throw Errors.NotFound("Mentor profile not found");
+        }
+        return mentor.mentorProfile.availabilities;
+    },
+
+    getMyProfile: async (userId: number) => {
+        let profile = await mentorRepository.findProfileByUserId(userId);
+        if (!profile) {
+            // Create empty profile if not exists, as per requirements
+            profile = await mentorRepository.upsertProfile(userId, {});
+        }
+        return profile;
+    },
+
+    upsertMyProfile: async (userId: number, data: any) => {
+        return mentorRepository.upsertProfile(userId, {
+            graduationYear: data.graduationYear,
+            currentCompany: data.currentCompany,
+            currentRole: data.currentRole,
+            bioExtended: data.bioExtended
+        });
+    },
+
+    addAvailability: async (userId: number, slots: any[]) => {
+        const profile = await mentorRepository.findProfileByUserId(userId);
+        if (!profile) {
+            throw Errors.NotFound("Mentor profile not found. Please create a profile first.");
+        }
+
+        // Basic validation could go here (e.g. check time format)
+
+        return mentorRepository.addAvailability(profile.id, slots);
+    },
+
+    updateAvailability: async (userId: number, slotId: number, data: any) => {
+        const slot = await mentorRepository.findAvailabilityById(slotId);
+        if (!slot) throw Errors.NotFound("Slot not found");
+
+        const profile = await mentorRepository.findProfileByUserId(userId);
+        if (!profile || profile.id !== slot.mentorProfileId) {
+            throw Errors.Forbidden("You do not own this availability slot");
+        }
+
+        return mentorRepository.updateAvailability(slotId, data);
+    },
+
+    deleteAvailability: async (userId: number, slotId: number) => {
+        const slot = await mentorRepository.findAvailabilityById(slotId);
+        if (!slot) throw Errors.NotFound("Slot not found");
+
+        const profile = await mentorRepository.findProfileByUserId(userId);
+        if (!profile || profile.id !== slot.mentorProfileId) {
+            throw Errors.Forbidden("You do not own this availability slot");
+        }
+
+        return mentorRepository.deleteAvailability(slotId);
     }
-    return mentor;
-  },
-
-  getMyMentorProfile: async (userId: number) => {
-    const profile = await mentorRepository.getOrCreateMentorProfile(userId);
-    return profile;
-  },
-
-  upsertMyMentorProfile: async (
-    userId: number,
-    data: UpsertMentorProfileInput
-  ) => {
-    const profile = await mentorRepository.upsertMentorProfile(userId, data);
-    return profile;
-  },
-
-  setMyAvailability: async (
-    userId: number,
-    slots: MentorAvailabilitySlotInput[]
-  ) => {
-    const profile = await mentorRepository.getOrCreateMentorProfile(userId);
-    const updatedSlots = await mentorRepository.replaceAvailability(
-      profile.id,
-      slots
-    );
-    return updatedSlots;
-  },
-
-  getMentorAvailability: async (mentorId: number) => {
-    const availability = await mentorRepository.getAvailabilityForMentor(
-      mentorId
-    );
-    return availability;
-  },
 };

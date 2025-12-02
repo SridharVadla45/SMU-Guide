@@ -1,37 +1,19 @@
-// src/modules/mentors/mentor.routes.ts
 import { Router } from "express";
 import { mentorController } from "../controllers/mentor.controller.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
-import { requireRole } from "../middlewares/role.middleware.js";
-import { Role } from "@prisma/client";
 
-const router = Router();
+const mentorRouter = Router();
 
-// ---------- Public routes ----------
+// Public routes
+mentorRouter.get("/", mentorController.listMentors);
+mentorRouter.get("/:mentorId(\\d+)", mentorController.getMentorById); // Regex to ensure ID is number, avoiding conflict with 'me' if not careful, though 'me' is specific string
+mentorRouter.get("/:mentorId(\\d+)/availability", mentorController.getMentorAvailability);
 
-// GET /api/mentors
-router.get("/", mentorController.listMentors);
+// Protected routes (Mentor management)
+mentorRouter.get("/me", authMiddleware, mentorController.getMyProfile);
+mentorRouter.put("/me", authMiddleware, mentorController.upsertMyProfile);
+mentorRouter.post("/me/availability", authMiddleware, mentorController.addAvailability);
+mentorRouter.put("/me/availability/:slotId", authMiddleware, mentorController.updateAvailability);
+mentorRouter.delete("/me/availability/:slotId", authMiddleware, mentorController.deleteAvailability);
 
-// These must be AFTER /me routes, so we'll add them later in the file
-
-// ---------- Mentor-only routes ----------
-router.use(authMiddleware, requireRole(Role.MENTOR));
-
-// GET /api/mentors/me/profile
-router.get("/me/profile", mentorController.getMyMentorProfile);
-
-// POST /api/mentors/me/profile
-router.post("/me/profile", mentorController.upsertMyMentorProfile);
-
-// POST /api/mentors/me/availability
-router.post("/me/availability", mentorController.setMyAvailability);
-
-// ---------- Public routes with :mentorId (placed after /me/*) ----------
-
-// GET /api/mentors/:mentorId
-router.get("/:mentorId", mentorController.getMentorById);
-
-// GET /api/mentors/:mentorId/availability
-router.get("/:mentorId/availability", mentorController.getMentorAvailability);
-
-export {router as mentorRouter};
+export { mentorRouter };

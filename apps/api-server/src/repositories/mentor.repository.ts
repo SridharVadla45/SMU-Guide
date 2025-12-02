@@ -1,151 +1,109 @@
-// src/modules/mentors/mentor.repository.ts
 import { prisma } from "../lib/prisma.js";
-import { Role } from "@prisma/client";
-import {
-  MentorAvailabilitySlotInput,
-  MentorFilter,
-  UpsertMentorProfileInput,
-} from "../types/mentor.types.js";
+import { Prisma } from "@prisma/client";
 
 export const mentorRepository = {
-  findMentors: async (filter: MentorFilter) => {
-    const { department, search, page = 1, limit = 10 } = filter;
+    findAll: async (params: {
+        skip?: number;
+        take?: number;
+        where?: Prisma.UserWhereInput;
+    }) => {
+        const { skip, take, where } = params;
+        return prisma.user.findMany({
+            where: {
+                role: "MENTOR",
+                ...where,
+            },
+            include: {
+                mentorProfile: true,
+            },
+            skip,
+            take,
+        });
+    },
 
-    return prisma.user.findMany({
-      where: {
-        role: Role.MENTOR,
-        ...(department ? { department } : {}),
-        ...(search
-          ? {
-              OR: [
-                { name: { contains: search, mode: "insensitive" } },
-                { bio: { contains: search, mode: "insensitive" } },
-              ],
-            }
-          : {}),
-      },
-      include: {
-        mentorProfile: {
-          include: {
-            availabilities: true,
-          },
-        },
-      },
-      skip: (page - 1) * limit,
-      take: limit,
-      orderBy: {
-        name: "asc",
-      },
-    });
-  },
+    count: async (where?: Prisma.UserWhereInput) => {
+        return prisma.user.count({
+            where: {
+                role: "MENTOR",
+                ...where,
+            },
+        });
+    },
 
-  countMentors: async (filter: MentorFilter) => {
-    const { department, search } = filter;
-    return prisma.user.count({
-      where: {
-        role: Role.MENTOR,
-        ...(department ? { department } : {}),
-        ...(search
-          ? {
-              OR: [
-                { name: { contains: search, mode: "insensitive" } },
-                { bio: { contains: search, mode: "insensitive" } },
-              ],
-            }
-          : {}),
-      },
-    });
-  },
+    findById: async (id: number) => {
+        return prisma.user.findUnique({
+            where: { id },
+            include: {
+                mentorProfile: {
+                    include: {
+                        availabilities: true,
+                    },
+                },
+            },
+        });
+    },
 
-  findMentorById: async (userId: number) => {
-    return prisma.user.findFirst({
-      where: {
-        id: userId,
-        role: Role.MENTOR,
-      },
-      include: {
-        mentorProfile: {
-          include: {
-            availabilities: true,
-          },
-        },
-      },
-    });
-  },
+    findProfileByUserId: async (userId: number) => {
+        return prisma.mentorProfile.findUnique({
+            where: { userId },
+            include: {
+                availabilities: true,
+            },
+        });
+    },
 
-  getOrCreateMentorProfile: async (userId: number) => {
-    let profile = await prisma.mentorProfile.findUnique({
-      where: { userId },
-      include: { availabilities: true },
-    });
+    upsertProfile: async (userId: number, data: Omit<Prisma.MentorProfileCreateInput, 'user'>) => {
+        // Check if profile exists
+        const existing = await prisma.mentorProfile.findUnique({
+            where: { userId },
+        });
 
-    if (!profile) {
-      profile = await prisma.mentorProfile.create({
-        data: {
-          userId,
-        },
-        include: { availabilities: true },
-      });
+        if (existing) {
+            return prisma.mentorProfile.update({
+                where: { userId },
+                data,
+                include: {
+                    availabilities: true,
+                },
+            });
+        } else {
+            return prisma.mentorProfile.create({
+                data: {
+                    ...data,
+                    user: { connect: { id: userId } },
+                },
+                include: {
+                    availabilities: true,
+                },
+            });
+        }
+    },
+
+    addAvailability: async (mentorProfileId: number, data: Prisma.MentorAvailabilityCreateManyInput[]) => {
+        return prisma.mentorAvailability.createMany({
+            data: data.map((slot) => ({
+                ...slot,
+                mentorProfileId,
+            })),
+        });
+    },
+
+    updateAvailability: async (slotId: number, data: Prisma.MentorAvailabilityUpdateInput) => {
+        return prisma.mentorAvailability.update({
+            where: { id: slotId },
+            data,
+        });
+    },
+
+    deleteAvailability: async (slotId: number) => {
+        return prisma.mentorAvailability.delete({
+            where: { id: slotId },
+        });
+    },
+
+    findAvailabilityById: async (slotId: number) => {
+        return prisma.mentorAvailability.findUnique({
+            where: { id: slotId }
+        })
     }
-
-    return profile;
-  },
-
-  upsertMentorProfile: async (
-    userId: number,
-    data: UpsertMentorProfileInput
-  ) => {
-    return prisma.mentorProfile.upsert({
-      where: { userId },
-      update: {
-        ...data,
-      },
-      create: {
-        userId,
-        ...data,
-      },
-      include: {
-        availabilities: true,
-      },
-    });
-  },
-
-  replaceAvailability: async (
-    mentorProfileId: number,
-    slots: MentorAvailabilitySlotInput[]
-  ) => {
-    await prisma.mentorAvailability.deleteMany({
-      where: { mentorProfileId },
-    });
-
-    if (slots.length === 0) {
-      return [];
-    }
-
-    await prisma.mentorAvailability.createMany({
-      data: slots.map((slot) => ({
-        mentorProfileId,
-        dayOfWeek: slot.dayOfWeek,
-        startTime: slot.startTime,
-        endTime: slot.endTime,
-      })),
-    });
-
-    return prisma.mentorAvailability.findMany({
-      where: { mentorProfileId },
-      orderBy: [
-        { dayOfWeek: "asc" },
-        { startTime: "asc" },
-      ],
-    });
-  },
-
-  getAvailabilityForMentor: async (mentorUserId: number) => {
-    const profile = await prisma.mentorProfile.findUnique({
-      where: { userId: mentorUserId },
-      include: { availabilities: true },
-    });
-
-    return profile?.availabilities || [];
-  },
 };

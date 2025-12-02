@@ -1,137 +1,101 @@
-// src/modules/mentors/mentor.controller.ts
-import type { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction } from "express";
 import { mentorService } from "../services/mentor.service.js";
-import {
-  validateAvailabilitySlots,
-  validateMentorFilter,
-  validateUpsertMentorProfile,
-} from "../validators/mentor.validators.js";
 import { Errors } from "../errors/ApiError.js";
 
 export const mentorController = {
-  listMentors: async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const filter = validateMentorFilter(req.query);
-      const result = await mentorService.listMentors(filter);
-      res.json({
-        success: true,
-        data: result.items,
-        meta: {
-          total: result.total,
-          page: result.page,
-          limit: result.limit,
-        },
-      });
-    } catch (err) {
-      next(err);
-    }
-  },
+    listMentors: async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const page = Number(req.query.page) || 1;
+            const limit = Number(req.query.limit) || 10;
+            const search = req.query.search as string;
+            const department = req.query.department as string;
 
-  getMentorById: async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const mentorId = Number(req.params.mentorId);
-      if (isNaN(mentorId)) {
-        throw Errors.Validation("mentorId must be a number");
-      }
+            const result = await mentorService.listMentors({ page, limit, search, department });
+            res.json(result);
+        } catch (err) {
+            next(err);
+        }
+    },
 
-      const mentor = await mentorService.getMentorById(mentorId);
-      res.json({
-        success: true,
-        data: mentor,
-      });
-    } catch (err) {
-      next(err);
-    }
-  },
+    getMentorById: async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const id = Number(req.params.mentorId);
+            const result = await mentorService.getMentorById(id);
+            res.json({ data: result });
+        } catch (err) {
+            next(err);
+        }
+    },
 
-  getMentorAvailability: async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
-    try {
-      const mentorId = Number(req.params.mentorId);
-      if (isNaN(mentorId)) {
-        throw Errors.Validation("mentorId must be a number");
-      }
+    getMentorAvailability: async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const id = Number(req.params.mentorId);
+            const result = await mentorService.getMentorAvailability(id);
+            res.json({ data: result });
+        } catch (err) {
+            next(err);
+        }
+    },
 
-      const availability = await mentorService.getMentorAvailability(mentorId);
-      res.json({
-        success: true,
-        data: availability,
-      });
-    } catch (err) {
-      next(err);
-    }
-  },
+    getMyProfile: async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = (req as any).user?.id;
+            if (!userId) throw Errors.Unauthorized("Not authenticated");
 
-  getMyMentorProfile: async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
-    try {
-      const user = (req as any).user as { id: number } | undefined;
-      if (!user) {
-        throw Errors.Unauthorized("Unauthorized", "UNAUTHORIZED");
-      }
+            const result = await mentorService.getMyProfile(userId);
+            res.json({ data: result });
+        } catch (err) {
+            next(err);
+        }
+    },
 
-      const profile = await mentorService.getMyMentorProfile(user.id);
-      res.json({
-        success: true,
-        data: profile,
-      });
-    } catch (err) {
-      next(err);
-    }
-  },
+    upsertMyProfile: async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = (req as any).user?.id;
+            if (!userId) throw Errors.Unauthorized("Not authenticated");
 
-  upsertMyMentorProfile: async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
-    try {
-      const user = (req as any).user as { id: number } | undefined;
-      if (!user) {
-        throw Errors.Unauthorized("Unauthorized", "UNAUTHORIZED");
-      }
+            const result = await mentorService.upsertMyProfile(userId, req.body);
+            res.json({ data: result });
+        } catch (err) {
+            next(err);
+        }
+    },
 
-      const input = validateUpsertMentorProfile(req.body);
-      const profile = await mentorService.upsertMyMentorProfile(
-        user.id,
-        input
-      );
+    addAvailability: async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = (req as any).user?.id;
+            if (!userId) throw Errors.Unauthorized("Not authenticated");
 
-      res.status(200).json({
-        success: true,
-        data: profile,
-      });
-    } catch (err) {
-      next(err);
-    }
-  },
+            const result = await mentorService.addAvailability(userId, req.body);
+            res.json({ data: result });
+        } catch (err) {
+            next(err);
+        }
+    },
 
-  setMyAvailability: async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
-    try {
-      const user = (req as any).user as { id: number } | undefined;
-      if (!user) {
-        throw Errors.Unauthorized("Unauthorized", "UNAUTHORIZED");
-      }
+    updateAvailability: async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = (req as any).user?.id;
+            if (!userId) throw Errors.Unauthorized("Not authenticated");
+            const slotId = Number(req.params.slotId);
 
-      const slots = validateAvailabilitySlots(req.body);
-      const updated = await mentorService.setMyAvailability(user.id, slots);
+            const result = await mentorService.updateAvailability(userId, slotId, req.body);
+            res.json({ data: result });
+        } catch (err) {
+            next(err);
+        }
+    },
 
-      res.status(200).json({
-        success: true,
-        data: updated,
-      });
-    } catch (err) {
-      next(err);
-    }
-  },
+    deleteAvailability: async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = (req as any).user?.id;
+            if (!userId) throw Errors.Unauthorized("Not authenticated");
+            const slotId = Number(req.params.slotId);
+
+            const result = await mentorService.deleteAvailability(userId, slotId);
+            res.json({ data: result });
+        } catch (err) {
+            next(err);
+        }
+    },
 };
