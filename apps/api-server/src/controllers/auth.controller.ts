@@ -33,6 +33,7 @@ export const authController = {
 
   me: async (req: Request, res: Response, next: NextFunction) => {
     try {
+      console.log("Fetching authenticated user info", req);
       const authUser = (req as any).user as { id: number } | undefined;
       if (!authUser?.id) {
         throw Errors.Unauthorized("Unauthorized", "UNAUTHORIZED");
@@ -40,7 +41,6 @@ export const authController = {
 
       const user = await authService.getMe(authUser.id);
       res.status(200).json({
-        success: true,
         data: user,
       });
     } catch (err) {
