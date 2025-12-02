@@ -59,7 +59,7 @@ export const apiClient = {
         // For now returning empty or could fetch mentors as users.
         return [];
     },
-    getUserById: async (id: number): Promise<User | undefined> => {
+    getUserById: async (_id: number): Promise<User | undefined> => {
         // If it's the current user, use getMe. Otherwise, this might fail if not a mentor.
         // For now, we'll try to fetch me if id matches (hacky) or just return undefined.
         // Better: The Profile page should use getMe().
@@ -97,10 +97,10 @@ export const apiClient = {
         });
         return handleResponse(response);
     },
-    getAppointmentsForUser: async (userId: number): Promise<Appointment[]> => {
-        // The API /appointments/my returns appointments for the *authenticated* user.
+    getAppointmentsForUser: async (_userId: number): Promise<Appointment[]> => {
+        // The API /appointments returns appointments for the *authenticated* user.
         // We ignore userId here and assume the token belongs to the user.
-        const response = await fetch(`${API_BASE_URL}/appointments/my`, {
+        const response = await fetch(`${API_BASE_URL}/appointments`, {
             headers: headers(),
         });
         return handleResponse(response);
@@ -139,7 +139,7 @@ export const apiClient = {
     },
 
     // Messaging
-    getConversations: async (userId: number): Promise<Conversation[]> => {
+    getConversations: async (_userId: number): Promise<Conversation[]> => {
         // Ignores userId, uses token
         const response = await fetch(`${API_BASE_URL}/messages/conversations`, {
             headers: headers(),
