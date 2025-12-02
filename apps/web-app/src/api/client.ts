@@ -22,30 +22,45 @@ const headers = () => {
 
 const handleResponse = async (response: Response) => {
     if (!response.ok) {
-        const error = await response.json().catch(() => ({ message: 'An error occurred' }));
+        const error = await response.json().catch(() => ({ message: 'Something went wrong' }));
         throw new Error(error.message || response.statusText);
     }
-    return response.json();
+    const json = await response.json();
+    // Backend returns {data: ...} or {success: true, data: ...}
+    // Extract the data property if it exists
+    return json.data !== undefined ? json.data : json;
 };
 
 export const apiClient = {
     // Auth
-    login: async (credentials: any) => {
+    login: async (credentials: { email: string; password: string }) => {
         const response = await fetch(`${API_BASE_URL}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(credentials),
         });
-        return handleResponse(response);
+        const result = await handleResponse(response);
+        // Login returns {token, user}, store token
+        if (result.token) {
+            localStorage.setItem('token', result.token);
+        }
+        return result;
     },
+
     register: async (data: any) => {
         const response = await fetch(`${API_BASE_URL}/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data),
         });
-        return handleResponse(response);
+        const result = await handleResponse(response);
+        // Register returns {token, user}, store token
+        if (result.token) {
+            localStorage.setItem('token', result.token);
+        }
+        return result;
     },
+
     getMe: async (): Promise<User> => {
         const response = await fetch(`${API_BASE_URL}/auth/me`, {
             headers: headers(),
@@ -53,36 +68,16 @@ export const apiClient = {
         return handleResponse(response);
     },
 
-    // Users (Limited support in API, mostly for Mentors)
-    getUsers: async (): Promise<User[]> => {
-        // Fallback or implementation depends on API. 
-        // For now returning empty or could fetch mentors as users.
-        return [];
-    },
-    getUserById: async (_id: number): Promise<User | undefined> => {
-        // If it's the current user, use getMe. Otherwise, this might fail if not a mentor.
-        // For now, we'll try to fetch me if id matches (hacky) or just return undefined.
-        // Better: The Profile page should use getMe().
-        return undefined;
-    },
-
     // Mentors
     getMentorProfiles: async (): Promise<MentorProfile[]> => {
-        const response = await fetch(`${API_BASE_URL}/mentors`, {
+        const response = await fetch(`${API_BASE_URL}/mentors?limit=100`, {
             headers: headers(),
         });
-        return handleResponse(response);
+        const result = await handleResponse(response);
+        // Backend returns paginated: {data: [], total, page, limit}
+        return Array.isArray(result) ? result : result;
     },
-    getMentorProfileByUserId: async (userId: number): Promise<MentorProfile | undefined> => {
-        // The API gets mentor by ID (which is likely the user ID in this context or mentor ID).
-        // Postman says /api/mentors/:mentorId. Let's assume mentorId matches userId for simplicity or the API handles it.
-        // Actually, usually mentorId is the ID of the MentorProfile, or the User ID. 
-        // Looking at Postman: "Replace 1 with a real mentor user ID". So it uses User ID.
-        const response = await fetch(`${API_BASE_URL}/mentors/${userId}`, {
-            headers: headers(),
-        });
-        return handleResponse(response);
-    },
+
     getMentorProfileById: async (id: number): Promise<MentorProfile | undefined> => {
         const response = await fetch(`${API_BASE_URL}/mentors/${id}`, {
             headers: headers(),
@@ -95,12 +90,28 @@ export const apiClient = {
         const response = await fetch(`${API_BASE_URL}/appointments`, {
             headers: headers(),
         });
+        const result = await handleResponse(response);
+        // Backend returns paginated: {data: [], meta: {}}
+        return Array.isArray(result) ? result : result;
+    },
+
+    createAppointment: async (data: {
+        mentorId: number;
+        startsAt: string;
+        endsAt: string;
+        notes?: string;
+    }): Promise<Appointment> => {
+        const response = await fetch(`${API_BASE_URL}/appointments`, {
+            method: 'POST',
+            headers: headers(),
+            body: JSON.stringify(data),
+        });
         return handleResponse(response);
     },
-    getAppointmentsForUser: async (_userId: number): Promise<Appointment[]> => {
-        // The API /appointments returns appointments for the *authenticated* user.
-        // We ignore userId here and assume the token belongs to the user.
-        const response = await fetch(`${API_BASE_URL}/appointments`, {
+
+    cancelAppointment: async (id: number): Promise<Appointment> => {
+        const response = await fetch(`${API_BASE_URL}/appointments/${id}/cancel`, {
+            method: 'PATCH',
             headers: headers(),
         });
         return handleResponse(response);
@@ -111,8 +122,10 @@ export const apiClient = {
         const response = await fetch(`${API_BASE_URL}/forum/topics`, {
             headers: headers(),
         });
-        return handleResponse(response);
+        const result = await handleResponse(response);
+        return Array.isArray(result) ? result : result;
     },
+
     getQuestions: async (topicId?: number): Promise<Question[]> => {
         const url = new URL(`${API_BASE_URL}/forum/questions`);
         if (topicId) url.searchParams.append('topicId', topicId.toString());
@@ -120,36 +133,78 @@ export const apiClient = {
         const response = await fetch(url.toString(), {
             headers: headers(),
         });
-        return handleResponse(response);
+        const result = await handleResponse(response);
+        // Backend returns paginated: {data: [], meta: {}}
+        return Array.isArray(result) ? result : result;
     },
+
     getQuestionById: async (id: number): Promise<Question | undefined> => {
         const response = await fetch(`${API_BASE_URL}/forum/questions/${id}`, {
             headers: headers(),
         });
         return handleResponse(response);
     },
-    getAnswers: async (questionId: number): Promise<Answer[]> => {
-        // The API returns answers included in the question details usually, 
-        // or we might need to fetch them. Postman says "including ... all answers" for GET question.
-        // But let's check if there is a specific endpoint. 
-        // Postman has POST /answers, but GET seems to be part of question.
-        // We can fetch the question and return its answers.
-        const question = await apiClient.getQuestionById(questionId);
-        return question?.answers || [];
-    },
 
-    // Messaging
-    getConversations: async (_userId: number): Promise<Conversation[]> => {
-        // Ignores userId, uses token
-        const response = await fetch(`${API_BASE_URL}/messages/conversations`, {
+    createQuestion: async (data: {
+        topicId: number;
+        title: string;
+        content: string;
+    }): Promise<Question> => {
+        const response = await fetch(`${API_BASE_URL}/forum/questions`, {
+            method: 'POST',
             headers: headers(),
+            body: JSON.stringify(data),
         });
         return handleResponse(response);
     },
-    getMessages: async (conversationId: number): Promise<Message[]> => {
-        const response = await fetch(`${API_BASE_URL}/messages/conversations/${conversationId}/messages`, {
+
+    createAnswer: async (questionId: number, content: string): Promise<Answer> => {
+        const response = await fetch(`${API_BASE_URL}/forum/questions/${questionId}/answers`, {
+            method: 'POST',
+            headers: headers(),
+            body: JSON.stringify({ content }),
+        });
+        return handleResponse(response);
+    },
+
+    // Messaging
+    getConversations: async (): Promise<Conversation[]> => {
+        const response = await fetch(`${API_BASE_URL}/messages/conversations`, {
             headers: headers(),
         });
+        const result = await handleResponse(response);
+        return Array.isArray(result) ? result : result;
+    },
+
+    createConversation: async (otherUserId: number): Promise<Conversation> => {
+        const response = await fetch(`${API_BASE_URL}/messages/conversations`, {
+            method: 'POST',
+            headers: headers(),
+            body: JSON.stringify({ otherUserId }),
+        });
+        return handleResponse(response);
+    },
+
+    getMessages: async (conversationId: number): Promise<Message[]> => {
+        const response = await fetch(
+            `${API_BASE_URL}/messages/conversations/${conversationId}/messages`,
+            {
+                headers: headers(),
+            }
+        );
+        const result = await handleResponse(response);
+        return Array.isArray(result) ? result : result;
+    },
+
+    sendMessage: async (conversationId: number, content: string): Promise<Message> => {
+        const response = await fetch(
+            `${API_BASE_URL}/messages/conversations/${conversationId}/messages`,
+            {
+                method: 'POST',
+                headers: headers(),
+                body: JSON.stringify({ content }),
+            }
+        );
         return handleResponse(response);
     },
 };

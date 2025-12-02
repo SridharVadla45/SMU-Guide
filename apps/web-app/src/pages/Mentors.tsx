@@ -1,13 +1,31 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/client';
-import type { MentorProfile } from '../types';
 import { Search, Filter } from 'lucide-react';
+
+// Backend returns User objects with mentorProfile nested
+interface MentorUser {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+    department?: string;
+    bio?: string;
+    avatarUrl?: string;
+    mentorProfile?: {
+        id: number;
+        userId: number;
+        graduationYear?: number;
+        currentCompany?: string;
+        currentRole?: string;
+        bioExtended?: string;
+    };
+}
 
 const Mentors = () => {
     const navigate = useNavigate();
-    const [mentors, setMentors] = useState<MentorProfile[]>([]);
-    const [filteredMentors, setFilteredMentors] = useState<MentorProfile[]>([]);
+    const [mentors, setMentors] = useState<MentorUser[]>([]);
+    const [filteredMentors, setFilteredMentors] = useState<MentorUser[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedRole, setSelectedRole] = useState<'ALL' | 'ALUMNI' | 'PROFESSOR'>('ALL');
@@ -17,8 +35,9 @@ const Mentors = () => {
         const fetchMentors = async () => {
             try {
                 const data = await apiClient.getMentorProfiles();
-                setMentors(data);
-                setFilteredMentors(data);
+                // Backend returns array of User objects with mentorProfile
+                setMentors(data as any);
+                setFilteredMentors(data as any);
             } catch (error) {
                 console.error('Error fetching mentors:', error);
             } finally {
@@ -37,31 +56,31 @@ const Mentors = () => {
             const query = searchQuery.toLowerCase();
             result = result.filter(
                 (m) =>
-                    m.user?.name.toLowerCase().includes(query) ||
-                    m.user?.department?.toLowerCase().includes(query) ||
-                    m.currentCompany?.toLowerCase().includes(query) ||
-                    m.currentRole?.toLowerCase().includes(query)
+                    m.name.toLowerCase().includes(query) ||
+                    m.department?.toLowerCase().includes(query) ||
+                    m.mentorProfile?.currentCompany?.toLowerCase().includes(query) ||
+                    m.mentorProfile?.currentRole?.toLowerCase().includes(query)
             );
         }
 
         // Filter by Role
         if (selectedRole !== 'ALL') {
             if (selectedRole === 'ALUMNI') {
-                result = result.filter((m) => m.user?.role === 'MENTOR');
+                result = result.filter((m) => m.role === 'MENTOR');
             } else if (selectedRole === 'PROFESSOR') {
-                result = result.filter((m) => m.user?.role === 'PROFESSOR');
+                result = result.filter((m) => m.role === 'PROFESSOR');
             }
         }
 
         // Filter by Department
         if (selectedDepartment !== 'All Departments') {
-            result = result.filter((m) => m.user?.department === selectedDepartment);
+            result = result.filter((m) => m.department === selectedDepartment);
         }
 
         setFilteredMentors(result);
     }, [searchQuery, selectedRole, selectedDepartment, mentors]);
 
-    const departments = ['All Departments', ...Array.from(new Set(mentors.map((m) => m.user?.department).filter(Boolean)))];
+    const departments = ['All Departments', ...Array.from(new Set(mentors.map((m) => m.department).filter(Boolean)))];
 
     if (loading) {
         return <div className="flex items-center justify-center h-full">Loading...</div>;
@@ -106,21 +125,21 @@ const Mentors = () => {
 
                     <div className="flex bg-gray-100 p-1 rounded-lg">
                         <button
-                            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${selectedRole === 'ALL' ? 'bg-black text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${selectedRole === 'ALL' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
                                 }`}
                             onClick={() => setSelectedRole('ALL')}
                         >
                             All
                         </button>
                         <button
-                            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${selectedRole === 'ALUMNI' ? 'bg-black text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${selectedRole === 'ALUMNI' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
                                 }`}
                             onClick={() => setSelectedRole('ALUMNI')}
                         >
                             Alumni
                         </button>
                         <button
-                            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${selectedRole === 'PROFESSOR' ? 'bg-black text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${selectedRole === 'PROFESSOR' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
                                 }`}
                             onClick={() => setSelectedRole('PROFESSOR')}
                         >
@@ -135,48 +154,54 @@ const Mentors = () => {
 
             {/* Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredMentors.map((profile) => (
-                    <div key={profile.id} className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col">
+                {filteredMentors.map((mentor) => (
+                    <div key={mentor.id} className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col">
                         <div className="flex items-start gap-4 mb-4">
                             <img
-                                src={profile.user?.avatarUrl}
-                                alt={profile.user?.name}
+                                src={mentor.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${mentor.name}`}
+                                alt={mentor.name}
                                 className="w-12 h-12 rounded-full object-cover border border-gray-100"
                             />
                             <div>
-                                <h3 className="font-medium text-gray-900">{profile.user?.name}</h3>
-                                <p className="text-xs text-gray-500">{profile.user?.department}</p>
-                                <span className={`inline-block mt-1 px-2 py-0.5 text-[10px] font-medium rounded-full ${profile.user?.role === 'PROFESSOR'
+                                <h3 className="font-medium text-gray-900">{mentor.name}</h3>
+                                <p className="text-xs text-gray-500">{mentor.department || 'No Department'}</p>
+                                <span className={`inline-block mt-1 px-2 py-0.5 text-[10px] font-medium rounded-full ${mentor.role === 'PROFESSOR'
                                     ? 'bg-purple-50 text-purple-700'
                                     : 'bg-blue-50 text-blue-700'
                                     }`}>
-                                    {profile.user?.role === 'PROFESSOR' ? 'Professor' : 'Alumni'}
+                                    {mentor.role === 'PROFESSOR' ? 'Professor' : 'Alumni'}
                                 </span>
                             </div>
                         </div>
 
                         <div className="mb-4">
                             <p className="text-sm font-medium text-gray-900">
-                                {profile.currentRole}
+                                {mentor.mentorProfile?.currentRole || 'No role specified'}
                             </p>
                             <p className="text-sm text-gray-500">
-                                {profile.currentCompany}
+                                {mentor.mentorProfile?.currentCompany || 'No company specified'}
                             </p>
                         </div>
 
                         <p className="text-sm text-gray-600 line-clamp-2 mb-6 flex-1">
-                            {profile.bioExtended || profile.user?.bio}
+                            {mentor.mentorProfile?.bioExtended || mentor.bio || 'No bio available'}
                         </p>
 
                         <button
-                            onClick={() => navigate(`/mentors/${profile.id}`)}
-                            className="w-full py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                            onClick={() => navigate(`/mentors/${mentor.id}`)}
+                            className="w-full py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
                         >
                             View Profile
                         </button>
                     </div>
                 ))}
             </div>
+
+            {filteredMentors.length === 0 && !loading && (
+                <div className="text-center py-12">
+                    <p className="text-gray-500">No mentors found matching your criteria</p>
+                </div>
+            )}
         </div>
     );
 };
