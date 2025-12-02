@@ -1,262 +1,104 @@
-// src/controllers/forum.controllers.ts
 import { Request, Response, NextFunction } from "express";
-import { forumService } from "../services/forum.services.js";
-import {
-  parseIdParam,
-  validateCreateAnswer,
-  validateCreateQuestion,
-  validateCreateTopic,
-  validateQuestionFilter,
-  validateTopicFilter,
-  validateUpdateAnswer,
-  validateUpdateQuestion,
-} from "../validators/forum.validators.js";
+import { forumService } from "../services/forum.service.js";
 import { Errors } from "../errors/ApiError.js";
-import { Role } from "@prisma/client";
 
 export const forumController = {
-  /* ---------- Topics ---------- */
+    // Topics
+    createTopic: async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userRole = (req as any).user?.role;
+            if (userRole !== "ADMIN") {
+                throw Errors.Forbidden("Only admins can create topics");
+            }
 
-  listTopics: async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const filter = validateTopicFilter(req.query);
+            const result = await forumService.createTopic(req.body);
+            res.status(201).json({ data: result });
+        } catch (err) {
+            next(err);
+        }
+    },
 
-      const result = await forumService.listTopics(filter);
+    listTopics: async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const result = await forumService.listTopics();
+            res.json({ data: result });
+        } catch (err) {
+            next(err);
+        }
+    },
 
-      res.json({
-        success: true,
-        data: result.items,
-        meta: {
-          total: result.total,
-          page: result.page,
-          limit: result.limit,
-        },
-      });
-    } catch (err) {
-      next(err);
-    }
-  },
+    getTopicById: async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const id = Number(req.params.topicId);
+            const result = await forumService.getTopicById(id);
+            res.json({ data: result });
+        } catch (err) {
+            next(err);
+        }
+    },
 
-  createTopic: async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const authUser = (req as any).user as { id: number; role: Role } | undefined;
-      if (!authUser) {
-        throw Errors.Unauthorized("Unauthorized", "UNAUTHORIZED");
-      }
+    // Questions
+    createQuestion: async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = (req as any).user?.id;
+            if (!userId) throw Errors.Unauthorized("Not authenticated");
 
-      const input = validateCreateTopic(req.body);
+            const result = await forumService.createQuestion(userId, req.body);
+            res.status(201).json({ data: result });
+        } catch (err) {
+            next(err);
+        }
+    },
 
-      const topic = await forumService.createTopic(
-        { id: authUser.id, role: authUser.role },
-        input
-      );
+    listQuestions: async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const page = Number(req.query.page) || 1;
+            const limit = Number(req.query.limit) || 10;
+            const topicId = req.query.topicId ? Number(req.query.topicId) : undefined;
 
-      res.status(201).json({
-        success: true,
-        data: topic,
-      });
-    } catch (err) {
-      next(err);
-    }
-  },
+            const result = await forumService.listQuestions({ topicId, page, limit });
+            res.json(result);
+        } catch (err) {
+            next(err);
+        }
+    },
 
-  /* ---------- Questions ---------- */
+    getQuestionById: async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const id = Number(req.params.questionId);
+            const result = await forumService.getQuestionById(id);
+            res.json({ data: result });
+        } catch (err) {
+            next(err);
+        }
+    },
 
-  listQuestions: async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const filter = validateQuestionFilter(req.query);
+    // Answers
+    createAnswer: async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = (req as any).user?.id;
+            if (!userId) throw Errors.Unauthorized("Not authenticated");
 
-      const result = await forumService.listQuestions(filter);
+            const questionId = Number(req.params.questionId);
+            const { body } = req.body;
 
-      res.json({
-        success: true,
-        data: result.items,
-        meta: {
-          total: result.total,
-          page: result.page,
-          limit: result.limit,
-        },
-      });
-    } catch (err) {
-      next(err);
-    }
-  },
+            const result = await forumService.createAnswer(userId, questionId, body);
+            res.status(201).json({ data: result });
+        } catch (err) {
+            next(err);
+        }
+    },
 
-  getQuestionById: async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const id = parseIdParam(req.params.id, "id");
+    acceptAnswer: async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = (req as any).user?.id;
+            if (!userId) throw Errors.Unauthorized("Not authenticated");
 
-      const question = await forumService.getQuestionById(id);
-
-      res.json({
-        success: true,
-        data: question,
-      });
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  createQuestion: async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const authUser = (req as any).user as { id: number; role: Role } | undefined;
-      if (!authUser) {
-        throw Errors.Unauthorized("Unauthorized", "UNAUTHORIZED");
-      }
-
-      const input = validateCreateQuestion(req.body);
-
-      const question = await forumService.createQuestion(
-        { id: authUser.id, role: authUser.role },
-        input
-      );
-
-      res.status(201).json({
-        success: true,
-        data: question,
-      });
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  updateQuestion: async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const authUser = (req as any).user as { id: number; role: Role } | undefined;
-      if (!authUser) {
-        throw Errors.Unauthorized("Unauthorized", "UNAUTHORIZED");
-      }
-
-      const id = parseIdParam(req.params.id, "id");
-      const input = validateUpdateQuestion(req.body);
-
-      const question = await forumService.updateQuestion(
-        { id: authUser.id, role: authUser.role },
-        id,
-        input
-      );
-
-      res.json({
-        success: true,
-        data: question,
-      });
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  deleteQuestion: async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const authUser = (req as any).user as { id: number; role: Role } | undefined;
-      if (!authUser) {
-        throw Errors.Unauthorized("Unauthorized", "UNAUTHORIZED");
-      }
-
-      const id = parseIdParam(req.params.id, "id");
-
-      await forumService.deleteQuestion(
-        { id: authUser.id, role: authUser.role },
-        id
-      );
-
-      res.status(204).send();
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  /* ---------- Answers ---------- */
-
-  addAnswer: async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const authUser = (req as any).user as { id: number; role: Role } | undefined;
-      if (!authUser) {
-        throw Errors.Unauthorized("Unauthorized", "UNAUTHORIZED");
-      }
-
-      const questionId = parseIdParam(req.params.id, "id");
-      const input = validateCreateAnswer(req.body);
-
-      const answer = await forumService.addAnswer(
-        { id: authUser.id, role: authUser.role },
-        questionId,
-        input
-      );
-
-      res.status(201).json({
-        success: true,
-        data: answer,
-      });
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  updateAnswer: async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const authUser = (req as any).user as { id: number; role: Role } | undefined;
-      if (!authUser) {
-        throw Errors.Unauthorized("Unauthorized", "UNAUTHORIZED");
-      }
-
-      const answerId = parseIdParam(req.params.answerId, "answerId");
-      const input = validateUpdateAnswer(req.body);
-
-      const answer = await forumService.updateAnswer(
-        { id: authUser.id, role: authUser.role },
-        answerId,
-        input
-      );
-
-      res.json({
-        success: true,
-        data: answer,
-      });
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  deleteAnswer: async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const authUser = (req as any).user as { id: number; role: Role } | undefined;
-      if (!authUser) {
-        throw Errors.Unauthorized("Unauthorized", "UNAUTHORIZED");
-      }
-
-      const answerId = parseIdParam(req.params.answerId, "answerId");
-
-      await forumService.deleteAnswer(
-        { id: authUser.id, role: authUser.role },
-        answerId
-      );
-
-      res.status(204).send();
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  acceptAnswer: async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const authUser = (req as any).user as { id: number; role: Role } | undefined;
-      if (!authUser) {
-        throw Errors.Unauthorized("Unauthorized", "UNAUTHORIZED");
-      }
-
-      const answerId = parseIdParam(req.params.answerId, "answerId");
-
-      const answer = await forumService.acceptAnswer(
-        { id: authUser.id, role: authUser.role },
-        answerId
-      );
-
-      res.json({
-        success: true,
-        data: answer,
-      });
-    } catch (err) {
-      next(err);
-    }
-  },
+            const answerId = Number(req.params.answerId);
+            const result = await forumService.acceptAnswer(answerId, userId);
+            res.json({ data: result });
+        } catch (err) {
+            next(err);
+        }
+    },
 };

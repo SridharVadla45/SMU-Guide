@@ -1,176 +1,133 @@
-// src/repositories/forum.repository.ts
 import { prisma } from "../lib/prisma.js";
-import {
-  CreateAnswerInput,
-  CreateQuestionInput,
-  CreateTopicInput,
-  QuestionFilter,
-  TopicFilter,
-  UpdateAnswerInput,
-  UpdateQuestionInput,
-} from "../types/forum.types.js";
+import { Prisma } from "@prisma/client";
 
 export const forumRepository = {
-  /* ---------- Topics ---------- */
+    // Topics
+    createTopic: async (data: Prisma.TopicCreateInput) => {
+        return prisma.topic.create({ data });
+    },
 
-  listTopics: async (filter: TopicFilter) => {
-    const { page = 1, limit = 10 } = filter;
-
-    const [items, total] = await Promise.all([
-      prisma.topic.findMany({
-        orderBy: { createdAt: "desc" },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      prisma.topic.count(),
-    ]);
-
-    return { items, total, page, limit };
-  },
-
-  createTopic: async (data: CreateTopicInput, userId: number) => {
-    // userId stored nowhere in Topic, but could be used for auditing later
-    return prisma.topic.create({
-      data: {
-        title: data.title,
-        description: data.description,
-      },
-    });
-  },
-
-  getTopicById: async (id: number) => {
-    return prisma.topic.findUnique({
-      where: { id },
-    });
-  },
-
-  /* ---------- Questions ---------- */
-
-  listQuestions: async (filter: QuestionFilter) => {
-    const { topicId, page = 1, limit = 10 } = filter;
-
-    const where: any = {};
-    if (topicId !== undefined) {
-      where.topicId = topicId;
-    }
-
-    const [items, total] = await Promise.all([
-      prisma.question.findMany({
-        where,
-        orderBy: { createdAt: "desc" },
-        skip: (page - 1) * limit,
-        take: limit,
-        include: {
-          topic: true,
-          askedBy: { select: { id: true, name: true, email: true, role: true } },
-          answers: {
+    findAllTopics: async () => {
+        return prisma.topic.findMany({
             include: {
-              answeredBy: {
-                select: { id: true, name: true, email: true, role: true },
-              },
+                _count: {
+                    select: { questions: true }
+                }
             },
-          },
-        },
-      }),
-      prisma.question.count({ where }),
-    ]);
+            orderBy: { createdAt: 'desc' }
+        });
+    },
 
-    return { items, total, page, limit };
-  },
+    findTopicById: async (id: number) => {
+        return prisma.topic.findUnique({
+            where: { id },
+            include: {
+                questions: {
+                    include: {
+                        askedBy: {
+                            select: { id: true, name: true, avatarUrl: true }
+                        },
+                        _count: {
+                            select: { answers: true }
+                        }
+                    },
+                    orderBy: { createdAt: 'desc' }
+                }
+            }
+        });
+    },
 
-  getQuestionById: async (id: number) => {
-    return prisma.question.findUnique({
-      where: { id },
-      include: {
-        topic: true,
-        askedBy: { select: { id: true, name: true, email: true, role: true } },
-        answers: {
-          orderBy: { createdAt: "asc" },
-          include: {
-            answeredBy: {
-              select: { id: true, name: true, email: true, role: true },
+    // Questions
+    createQuestion: async (data: Prisma.QuestionCreateInput) => {
+        return prisma.question.create({
+            data,
+            include: {
+                askedBy: {
+                    select: { id: true, name: true, avatarUrl: true }
+                },
+                topic: true
+            }
+        });
+    },
+
+    findQuestionById: async (id: number) => {
+        return prisma.question.findUnique({
+            where: { id },
+            include: {
+                askedBy: {
+                    select: { id: true, name: true, avatarUrl: true, role: true }
+                },
+                topic: true,
+                answers: {
+                    include: {
+                        answeredBy: {
+                            select: { id: true, name: true, avatarUrl: true, role: true }
+                        }
+                    },
+                    orderBy: [
+                        { isAccepted: 'desc' },
+                        { createdAt: 'asc' }
+                    ]
+                }
+            }
+        });
+    },
+
+    findAllQuestions: async (params: {
+        topicId?: number;
+        skip?: number;
+        take?: number;
+    }) => {
+        const { topicId, skip, take } = params;
+        const where: Prisma.QuestionWhereInput = topicId ? { topicId } : {};
+
+        return prisma.question.findMany({
+            where,
+            include: {
+                askedBy: {
+                    select: { id: true, name: true, avatarUrl: true }
+                },
+                topic: true,
+                _count: {
+                    select: { answers: true }
+                }
             },
-          },
-        },
-      },
-    });
-  },
+            orderBy: { createdAt: 'desc' },
+            skip,
+            take
+        });
+    },
 
-  createQuestion: async (data: CreateQuestionInput, askedById: number) => {
-    return prisma.question.create({
-      data: {
-        title: data.title,
-        body: data.body,
-        topicId: data.topicId,
-        askedById,
-      },
-    });
-  },
+    countQuestions: async (where?: Prisma.QuestionWhereInput) => {
+        return prisma.question.count({ where });
+    },
 
-  updateQuestion: async (id: number, data: UpdateQuestionInput) => {
-    return prisma.question.update({
-      where: { id },
-      data,
-    });
-  },
+    // Answers
+    createAnswer: async (data: Prisma.AnswerCreateInput) => {
+        return prisma.answer.create({
+            data,
+            include: {
+                answeredBy: {
+                    select: { id: true, name: true, avatarUrl: true, role: true }
+                }
+            }
+        });
+    },
 
-  deleteQuestion: async (id: number) => {
-    return prisma.question.delete({
-      where: { id },
-    });
-  },
+    findAnswerById: async (id: number) => {
+        return prisma.answer.findUnique({
+            where: { id },
+            include: {
+                answeredBy: true,
+                question: true
+            }
+        });
+    },
 
-  /* ---------- Answers ---------- */
-
-  createAnswer: async (
-    questionId: number,
-    data: CreateAnswerInput,
-    answeredById: number
-  ) => {
-    return prisma.answer.create({
-      data: {
-        questionId,
-        body: data.body,
-        answeredById,
-      },
-    });
-  },
-
-  getAnswerById: async (id: number) => {
-    return prisma.answer.findUnique({
-      where: { id },
-      include: {
-        question: true,
-        answeredBy: {
-          select: { id: true, name: true, email: true, role: true },
-        },
-      },
-    });
-  },
-
-  updateAnswer: async (id: number, data: UpdateAnswerInput) => {
-    return prisma.answer.update({
-      where: { id },
-      data,
-    });
-  },
-
-  deleteAnswer: async (id: number) => {
-    return prisma.answer.delete({
-      where: { id },
-    });
-  },
-
-  acceptAnswer: async (answerId: number, questionId: number) => {
-    // mark this answer accepted, others of same question not accepted
-    await prisma.answer.updateMany({
-      where: { questionId },
-      data: { isAccepted: false },
-    });
-
-    return prisma.answer.update({
-      where: { id: answerId },
-      data: { isAccepted: true },
-    });
-  },
+    acceptAnswer: async (id: number) => {
+        return prisma.answer.update({
+            where: { id },
+            data: { isAccepted: true }
+        });
+    }
 };
