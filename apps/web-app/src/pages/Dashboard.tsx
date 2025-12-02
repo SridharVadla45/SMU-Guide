@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { apiClient } from '../api/client';
 import type { User, Appointment, MentorProfile, Question } from '../types';
 import { Calendar, Clock, ArrowRight, MessageSquare } from 'lucide-react';
@@ -14,7 +14,7 @@ const Dashboard = () => {
         const fetchData = async () => {
             try {
                 const [usersData, appointmentsData, mentorsData, questionsData] = await Promise.all([
-                    apiClient.getUserById(1), // Assume logged in as user 1
+                    apiClient.getMe(),
                     apiClient.getAppointmentsForUser(1),
                     apiClient.getMentorProfiles(),
                     apiClient.getQuestions(),

@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { apiClient } from '../api/client';
 import type { Appointment } from '../types';
-import { AppointmentStatus } from '../types';
 import { Calendar, Clock, Video, MessageSquare, X } from 'lucide-react';
 
 const Appointments = () => {
@@ -29,15 +28,15 @@ const Appointments = () => {
         const aptDate = new Date(apt.startsAt);
 
         if (activeTab === 'upcoming') {
-            return aptDate >= now && apt.status !== AppointmentStatus.CANCELLED;
+            return aptDate >= now && apt.status !== 'CANCELLED';
         } else if (activeTab === 'past') {
-            return aptDate < now || apt.status === AppointmentStatus.COMPLETED;
+            return aptDate < now || apt.status === 'COMPLETED';
         }
         return true;
     });
 
-    const upcomingCount = appointments.filter(a => new Date(a.startsAt) >= new Date() && a.status !== AppointmentStatus.CANCELLED).length;
-    const pastCount = appointments.filter(a => new Date(a.startsAt) < new Date() || a.status === AppointmentStatus.COMPLETED).length;
+    const upcomingCount = appointments.filter(a => new Date(a.startsAt) >= new Date() && a.status !== 'CANCELLED').length;
+    const pastCount = appointments.filter(a => new Date(a.startsAt) < new Date() || a.status === 'COMPLETED').length;
     const allCount = appointments.length;
 
     if (loading) {

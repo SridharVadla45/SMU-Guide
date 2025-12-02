@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { GraduationCap } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -14,9 +14,10 @@ const Login = () => {
         e.preventDefault();
         setError('');
         try {
-            const data = await apiClient.login({ email, password });
-            if (data.token) {
-                localStorage.setItem('token', data.token);
+            const response = await apiClient.login({ email, password });
+            console.log(response);  
+            if (response.data.token) {
+                localStorage.setItem('token', response.data.token);
                 navigate('/dashboard');
             } else {
                 setError('Login failed: No token received');

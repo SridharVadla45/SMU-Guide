@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { GraduationCap } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Role } from '../types';
 
 import { apiClient } from '../api/client';
 
@@ -30,15 +29,16 @@ const Register = () => {
         }
 
         try {
-            const data = await apiClient.register({
+            const response = await apiClient.register({
                 name: formData.fullName,
                 email: formData.email,
                 password: formData.password,
                 role: formData.role,
             });
-            if (data.token) {
-                localStorage.setItem('token', data.token);
-                navigate('/dashboard');
+            console.log(response);
+            if (response.data.token) {
+                localStorage.setItem('token', response.data.token);
+                navigate('/login');
             } else {
                 setError('Registration failed: No token received');
             }
@@ -158,9 +158,9 @@ const Register = () => {
                                     className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-gray-50"
                                 >
                                     <option value="">Select your role</option>
-                                    <option value={Role.STUDENT}>Student</option>
-                                    <option value={Role.MENTOR}>Mentor</option>
-                                    <option value={Role.PROFESSOR}>Professor</option>
+                                    <option value={'STUDENT'}>Student</option>
+                                    <option value={'MENTOR'}>Mentor</option>
+                                    <option value={'PROFESSOR'}>Professor</option>
                                 </select>
                             </div>
                         </div>

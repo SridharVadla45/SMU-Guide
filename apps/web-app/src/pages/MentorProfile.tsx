@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/client';
 import type { MentorProfile } from '../types';
-import { Role } from '../types';
 import { Briefcase, GraduationCap, Building, ArrowLeft, Calendar } from 'lucide-react';
 
 const MentorProfilePage = () => {
@@ -63,11 +62,11 @@ const MentorProfilePage = () => {
                     <div>
                         <div className="flex items-center gap-3 mb-1">
                             <h1 className="text-2xl font-bold text-gray-900">{profile.user?.name}</h1>
-                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${profile.user?.role === Role.PROFESSOR
+                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${profile.user?.role === 'PROFESSOR'
                                     ? 'bg-purple-50 text-purple-700'
                                     : 'bg-blue-50 text-blue-700'
                                 }`}>
-                                {profile.user?.role === Role.PROFESSOR ? 'Professor' : 'Alumni'}
+                                {profile.user?.role === 'PROFESSOR' ? 'Professor' : 'Alumni'}
                             </span>
                         </div>
 

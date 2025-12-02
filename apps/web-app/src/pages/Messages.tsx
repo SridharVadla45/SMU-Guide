@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { apiClient } from '../api/client';
 import type { Conversation, Message, User } from '../types';
 import { Search, Plus, Send } from 'lucide-react';

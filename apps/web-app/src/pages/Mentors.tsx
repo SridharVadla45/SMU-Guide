@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/client';
 import type { MentorProfile } from '../types';
-import { Role } from '../types';
 import { Search, Filter } from 'lucide-react';
 
 const Mentors = () => {
@@ -48,9 +47,9 @@ const Mentors = () => {
         // Filter by Role
         if (selectedRole !== 'ALL') {
             if (selectedRole === 'ALUMNI') {
-                result = result.filter((m) => m.user?.role === Role.MENTOR);
+                result = result.filter((m) => m.user?.role === 'MENTOR');
             } else if (selectedRole === 'PROFESSOR') {
-                result = result.filter((m) => m.user?.role === Role.PROFESSOR);
+                result = result.filter((m) => m.user?.role === 'PROFESSOR');
             }
         }
 
@@ -147,11 +146,11 @@ const Mentors = () => {
                             <div>
                                 <h3 className="font-medium text-gray-900">{profile.user?.name}</h3>
                                 <p className="text-xs text-gray-500">{profile.user?.department}</p>
-                                <span className={`inline-block mt-1 px-2 py-0.5 text-[10px] font-medium rounded-full ${profile.user?.role === Role.PROFESSOR
+                                <span className={`inline-block mt-1 px-2 py-0.5 text-[10px] font-medium rounded-full ${profile.user?.role === 'PROFESSOR'
                                     ? 'bg-purple-50 text-purple-700'
                                     : 'bg-blue-50 text-blue-700'
                                     }`}>
-                                    {profile.user?.role === Role.PROFESSOR ? 'Professor' : 'Alumni'}
+                                    {profile.user?.role === 'PROFESSOR' ? 'Professor' : 'Alumni'}
                                 </span>
                             </div>
                         </div>
