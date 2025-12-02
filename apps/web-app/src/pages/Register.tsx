@@ -3,6 +3,8 @@ import { GraduationCap } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Role } from '../types';
 
+import { apiClient } from '../api/client';
+
 const Register = () => {
     const [formData, setFormData] = useState({
         fullName: '',
@@ -11,16 +13,38 @@ const Register = () => {
         confirmPassword: '',
         role: '',
     });
+    const [error, setError] = useState('');
     const navigate = useNavigate();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('Register:', formData);
-        navigate('/dashboard');
+        setError('');
+
+        if (formData.password !== formData.confirmPassword) {
+            setError('Passwords do not match');
+            return;
+        }
+
+        try {
+            const data = await apiClient.register({
+                name: formData.fullName,
+                email: formData.email,
+                password: formData.password,
+                role: formData.role,
+            });
+            if (data.token) {
+                localStorage.setItem('token', data.token);
+                navigate('/dashboard');
+            } else {
+                setError('Registration failed: No token received');
+            }
+        } catch (err: any) {
+            setError(err.message || 'Registration failed');
+        }
     };
 
     return (
@@ -41,6 +65,11 @@ const Register = () => {
 
             <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
                 <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-gray-100">
+                    {error && (
+                        <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded relative" role="alert">
+                            <span className="block sm:inline">{error}</span>
+                        </div>
+                    )}
                     <form className="space-y-6" onSubmit={handleSubmit}>
                         <div>
                             <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">

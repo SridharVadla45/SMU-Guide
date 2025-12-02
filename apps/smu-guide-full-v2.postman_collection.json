@@ -1,0 +1,1057 @@
+{
+  "info": {
+    "_postman_id": "d4053ae8-d77c-45bf-bfe0-b4f4e6a3124d",
+    "name": "SMU-Guide API (Backend)",
+    "description": "Postman collection for SMU-Guide backend: auth, mentors, availability, appointments, forum, and messaging.\n\nUsage:\n- Set `baseUrl` to your API base (e.g. http://localhost:4000).\n- Register or login via /api/auth to get a JWT token.\n- Copy token to the `token` variable so protected routes work.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4000"
+    },
+    {
+      "key": "token",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET /api/health \u2013 API health check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "health"
+              ]
+            },
+            "description": "Simple health check endpoint to verify that the API server is running."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "POST /api/auth/register \u2013 Register new user",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Register a new user (student/mentor/professor/admin).\nReturns JWT + basic user info.\nDefault role if not provided: STUDENT.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test Student\",\n  \"email\": \"student@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"STUDENT\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/auth/login \u2013 Login and get JWT",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login with email and password.\nReturns JWT token and user info.\nCopy the `token` from the response into the collection variable `token`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student@example.com\",\n  \"password\": \"password123\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/auth/me \u2013 Get current user profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Get the currently authenticated user's basic profile (`id`, `name`, `email`, `role`)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Mentors & Availability",
+      "item": [
+        {
+          "name": "GET /api/mentors \u2013 List mentors",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/mentors",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "mentors"
+              ],
+              "query": [
+                {
+                  "key": "department",
+                  "value": ""
+                },
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Public endpoint to list mentor users with their basic info, mentor profile, and availability.\nOptional query params: department, search, page, limit."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/mentors/:mentorId \u2013 Get mentor details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/mentors/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "mentors",
+                "1"
+              ]
+            },
+            "description": "Public endpoint to get details for a single mentor by user ID.\nIncludes mentor profile and availability.\nReplace `1` with a real mentor user ID."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/mentors/:mentorId/availability \u2013 View mentor availability",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/mentors/1/availability",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "mentors",
+                "1",
+                "availability"
+              ]
+            },
+            "description": "Public endpoint to view a mentor's availability slots.\nReplace `1` with the mentor's user ID.\nReturns an array of slots with `dayOfWeek`, `startTime`, `endTime`."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/mentors/me/profile \u2013 Get my mentor profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/mentors/me/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "mentors",
+                "me",
+                "profile"
+              ]
+            },
+            "description": "Get the authenticated mentor's MentorProfile.\nIf the profile does not exist yet, the backend will create an empty one.\nRequires user with role MENTOR."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/mentors/me/profile \u2013 Create/update my mentor profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/mentors/me/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "mentors",
+                "me",
+                "profile"
+              ]
+            },
+            "description": "Create or update the authenticated mentor's profile.\nAll fields are optional; only provided fields will be set/updated.\nRequires user with role MENTOR.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"graduationYear\": 2024,\n  \"currentCompany\": \"Example Corp\",\n  \"currentRole\": \"Senior Engineer\",\n  \"bioExtended\": \"Alumni mentor focusing on backend and career guidance.\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/mentors/me/availability \u2013 Add availability slots",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/mentors/me/availability",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "mentors",
+                "me",
+                "availability"
+              ]
+            },
+            "description": "Add one or more availability slots for the authenticated mentor.\nEach slot has `dayOfWeek` (0\u20136), `startTime`, `endTime` in HH:MM format.",
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"dayOfWeek\": 1,\n    \"startTime\": \"09:00\",\n    \"endTime\": \"11:00\"\n  },\n  {\n    \"dayOfWeek\": 3,\n    \"startTime\": \"14:00\",\n    \"endTime\": \"16:00\"\n  }\n]"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/mentors/me/availability/:slotId \u2013 Update availability slot",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/mentors/me/availability/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "mentors",
+                "me",
+                "availability",
+                "1"
+              ]
+            },
+            "description": "Update an existing availability slot belonging to the authenticated mentor.\nYou can change one or more of: `dayOfWeek`, `startTime`, `endTime`.\nReplace `1` with a real slot ID.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"startTime\": \"10:00\",\n  \"endTime\": \"12:00\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/mentors/me/availability/:slotId \u2013 Delete availability slot",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/mentors/me/availability/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "mentors",
+                "me",
+                "availability",
+                "1"
+              ]
+            },
+            "description": "Delete an availability slot belonging to the authenticated mentor.\nReplace `1` with a real slot ID."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Appointments",
+      "item": [
+        {
+          "name": "POST /api/appointments \u2013 Create appointment (student \u2192 mentor)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "appointments"
+              ]
+            },
+            "description": "Create a new appointment between the authenticated student and a mentor.\nRequires role STUDENT.\nTimes must be within mentor's availability and not overlapping with other appointments.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mentorId\": 2,\n  \"startsAt\": \"2025-01-10T14:00:00.000Z\",\n  \"endsAt\": \"2025-01-10T14:30:00.000Z\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/appointments/my \u2013 List my appointments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/my",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "appointments",
+                "my"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "List appointments for the authenticated user.\nSTUDENT: appointments as student, MENTOR: as mentor, ADMIN: all.\nOptional `status` filter."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/appointments/:id \u2013 Appointment details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "appointments",
+                "1"
+              ]
+            },
+            "description": "Get details of a specific appointment by ID.\nAccessible to the student, mentor, or ADMIN."
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/appointments/:id/cancel \u2013 Cancel appointment",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/1/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "appointments",
+                "1",
+                "cancel"
+              ]
+            },
+            "description": "Cancel an appointment.\nAllowed for the student, mentor, or ADMIN.\nNot allowed if already CANCELLED or COMPLETED."
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/appointments/:id/complete \u2013 Mark appointment completed",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/1/complete",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "appointments",
+                "1",
+                "complete"
+              ]
+            },
+            "description": "Mark an appointment as COMPLETED.\nOnly the mentor or ADMIN can perform this action.\nNot allowed if the appointment is CANCELLED."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Forum",
+      "item": [
+        {
+          "name": "GET /api/forum/topics \u2013 List topics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/forum/topics",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "forum",
+                "topics"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Public endpoint to list forum topics.\nSupports pagination via `page` and `limit`."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/forum/topics \u2013 Create topic (admin only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/forum/topics",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "forum",
+                "topics"
+              ]
+            },
+            "description": "Create a new forum topic.\nRequires role ADMIN.\nUse this to categorize questions.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Backend Development\",\n  \"description\": \"Questions related to Node.js, TypeScript, and APIs.\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/forum/questions \u2013 List questions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/forum/questions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "forum",
+                "questions"
+              ],
+              "query": [
+                {
+                  "key": "topicId",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Public endpoint to list questions.\nOptional query params: topicId, page, limit."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/forum/questions/:id \u2013 Question details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/forum/questions/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "forum",
+                "questions",
+                "1"
+              ]
+            },
+            "description": "Public endpoint to get a single question by ID, including topic, asker, and all answers."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/forum/questions \u2013 Create question",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/forum/questions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "forum",
+                "questions"
+              ]
+            },
+            "description": "Create a new question under a topic.\nRequires any authenticated user.\nProvide topicId, title, and body.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"topicId\": 1,\n  \"title\": \"How do I structure a Node.js backend?\",\n  \"body\": \"I want to learn how to organize controllers, services, and repositories in a clean way. Any tips?\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/forum/questions/:id \u2013 Edit question",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/forum/questions/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "forum",
+                "questions",
+                "1"
+              ]
+            },
+            "description": "Edit an existing question.\nOnly the question owner or ADMIN can edit.\nYou can update title, body, or both.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated question title\",\n  \"body\": \"Updated question body.\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/forum/questions/:id \u2013 Delete question",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/forum/questions/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "forum",
+                "questions",
+                "1"
+              ]
+            },
+            "description": "Delete a question.\nOnly the question owner or ADMIN can delete.\nThis may also remove associated answers depending on DB cascade rules."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/forum/questions/:id/answers \u2013 Add answer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/forum/questions/1/answers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "forum",
+                "questions",
+                "1",
+                "answers"
+              ]
+            },
+            "description": "Add an answer to a specific question.\nRequires any authenticated user.\nProvide body with your answer text.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"body\": \"You can use a layered architecture with controllers, services, repositories, and validators.\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/forum/answers/:answerId \u2013 Edit answer",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/forum/answers/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "forum",
+                "answers",
+                "1"
+              ]
+            },
+            "description": "Edit an existing answer.\nOnly the answer owner or ADMIN can edit.\nProvide a new body.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"body\": \"Updated answer text.\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/forum/answers/:answerId \u2013 Delete answer",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/forum/answers/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "forum",
+                "answers",
+                "1"
+              ]
+            },
+            "description": "Delete an answer.\nOnly the answer owner or ADMIN can delete."
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/forum/answers/:answerId/accept \u2013 Accept answer",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/forum/answers/1/accept",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "forum",
+                "answers",
+                "1",
+                "accept"
+              ]
+            },
+            "description": "Mark an answer as accepted for its question.\nOnly the question owner or ADMIN can accept.\nOther answers for the same question will be marked not accepted."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Messaging (REST Chat)",
+      "item": [
+        {
+          "name": "GET /api/messages/conversations \u2013 List my conversations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/messages/conversations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "messages",
+                "conversations"
+              ]
+            },
+            "description": "List all conversations where the authenticated user is a participant.\nEach conversation includes participants and the latest message."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/messages/conversations \u2013 Start conversation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/messages/conversations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "messages",
+                "conversations"
+              ]
+            },
+            "description": "Start a new direct conversation with another user.\nIf a direct conversation already exists, that one is returned.\nProvide participantId (other user's ID).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"participantId\": 2\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/messages/conversations/:id \u2013 Conversation info",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/messages/conversations/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "messages",
+                "conversations",
+                "1"
+              ]
+            },
+            "description": "Get info about a specific conversation, including participants.\nOnly participants can access this conversation."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/messages/conversations/:id/messages \u2013 List messages",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/messages/conversations/1/messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "messages",
+                "conversations",
+                "1",
+                "messages"
+              ]
+            },
+            "description": "List all messages in a conversation, ordered by creation time.\nOnly participants can view messages."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/messages/conversations/:id/messages \u2013 Send message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/messages/conversations/1/messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "messages",
+                "conversations",
+                "1",
+                "messages"
+              ]
+            },
+            "description": "Send a new message in the specified conversation.\nAuthenticated user must be a participant.\nProvide content as the message text.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Hi, I wanted to ask about your availability this week.\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/messages/messages/:id/read \u2013 Mark message as read",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/messages/messages/1/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "messages",
+                "messages",
+                "1",
+                "read"
+              ]
+            },
+            "description": "Mark a specific message as read by the authenticated user.\nOnly participants of the conversation can mark it as read.\nBackend stores readAt timestamp."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

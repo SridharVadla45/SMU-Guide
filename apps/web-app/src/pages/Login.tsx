@@ -2,16 +2,28 @@ import React, { useState } from 'react';
 import { GraduationCap } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
+import { apiClient } from '../api/client';
+
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
     const navigate = useNavigate();
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Handle login logic here
-        console.log('Login:', { email, password });
-        navigate('/dashboard');
+        setError('');
+        try {
+            const data = await apiClient.login({ email, password });
+            if (data.token) {
+                localStorage.setItem('token', data.token);
+                navigate('/dashboard');
+            } else {
+                setError('Login failed: No token received');
+            }
+        } catch (err: any) {
+            setError(err.message || 'Login failed');
+        }
     };
 
     return (
@@ -32,6 +44,11 @@ const Login = () => {
 
             <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
                 <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-gray-100">
+                    {error && (
+                        <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded relative" role="alert">
+                            <span className="block sm:inline">{error}</span>
+                        </div>
+                    )}
                     <form className="space-y-6" onSubmit={handleSubmit}>
                         <div>
                             <label htmlFor="email" className="block text-sm font-medium text-gray-700">
