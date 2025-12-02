@@ -10,7 +10,7 @@ export const mentorRepository = {
         const { skip, take, where } = params;
         return prisma.user.findMany({
             where: {
-                role: "MENTOR",
+                role: { in: ["MENTOR", "PROFESSOR"] },
                 ...where,
             },
             include: {
@@ -24,7 +24,7 @@ export const mentorRepository = {
     count: async (where?: Prisma.UserWhereInput) => {
         return prisma.user.count({
             where: {
-                role: "MENTOR",
+                role: { in: ["MENTOR", "PROFESSOR"] },
                 ...where,
             },
         });

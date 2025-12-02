@@ -46,8 +46,8 @@ export const mentorService = {
         if (!mentor) {
             throw Errors.NotFound("Mentor not found");
         }
-        if (mentor.role !== "MENTOR") {
-            throw Errors.NotFound("User is not a mentor");
+        if (mentor.role !== "MENTOR" && mentor.role !== "PROFESSOR") {
+            throw Errors.NotFound("User is not a mentor or professor");
         }
         return mentor;
     },

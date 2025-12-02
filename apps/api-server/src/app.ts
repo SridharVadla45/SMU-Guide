@@ -7,6 +7,7 @@ import { mentorRouter } from "./routes/mentor.routes.js";
 import { appointmentRouter } from "./routes/appointment.routes.js";
 import { forumRouter } from "./routes/forum.routes.js";
 import { userRouter } from "./routes/user.routes.js";
+import { paymentRouter } from "./routes/payment.routes.js";
 import { globalErrorHandler } from "./errors/errorHandler.js";
 import { ApiError, Errors } from "./errors/ApiError.js";
 
@@ -24,6 +25,7 @@ app.use("/api/mentors", mentorRouter);
 app.use("/api/appointments", appointmentRouter);
 app.use("/api/forum", forumRouter);
 app.use("/api/users", userRouter);
+app.use("/api/payments", paymentRouter);
 
 
 
