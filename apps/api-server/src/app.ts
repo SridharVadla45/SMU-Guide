@@ -3,13 +3,12 @@ import express from "express";
 import cors from "cors";
 import morgan from "morgan";
 import { authRouter as authRoutes } from "./routes/auth.routes.js";
-import {  mentorRouter } from "./routes/mentor.routes.js";
+import { mentorRouter } from "./routes/mentor.routes.js";
+import { appointmentRouter } from "./routes/appointment.routes.js";
+import { forumRouter } from "./routes/forum.routes.js";
+import { messageRouter } from "./routes/message.routes.js";
 import { globalErrorHandler } from "./errors/errorHandler.js";
 import { ApiError, Errors } from "./errors/ApiError.js";
-import { availabilityRoutes } from "./routes/availability.routes.js";
-import { appointmentRoutes } from "./routes/appointment.routes.js";
-import { forumRoutes } from "./routes/forum.routes.js";
-import { messagingRoutes } from "./routes/messaging.routes.js";
 
 const app = express();
 
@@ -21,15 +20,16 @@ app.use(express.json());
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/mentors", mentorRouter);
-app.use("/api/mentors", availabilityRoutes);
-app.use("/api/appointments", appointmentRoutes);
-app.use("/api/forum", forumRoutes);
-app.use("/api/messages", messagingRoutes);
+app.use("/api/appointments", appointmentRouter);
+app.use("/api/forum", forumRouter);
+app.use("/api/messages", messageRouter);
+
+
 
 
 
 // 404 handler for unknown routes
-app.use((req, res,next) => {
+app.use((req, res, next) => {
   next(Errors.NotFound(`Route ${req.method} ${req.originalUrl} not found`));
 });
 
