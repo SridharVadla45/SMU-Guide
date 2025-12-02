@@ -78,13 +78,24 @@ export const mentorService = {
         });
     },
 
-    addAvailability: async (userId: number, slots: any[]) => {
+    addAvailability: async (userId: number, slotsData: any) => {
         const profile = await mentorRepository.findProfileByUserId(userId);
         if (!profile) {
             throw Errors.NotFound("Mentor profile not found. Please create a profile first.");
         }
 
-        // Basic validation could go here (e.g. check time format)
+        // Handle both single object and array
+        const slots = Array.isArray(slotsData) ? slotsData : [slotsData];
+
+        // Basic validation
+        for (const slot of slots) {
+            if (slot.dayOfWeek < 0 || slot.dayOfWeek > 6) {
+                throw Errors.BadRequest("dayOfWeek must be between 0 and 6");
+            }
+            if (!slot.startTime || !slot.endTime) {
+                throw Errors.BadRequest("startTime and endTime are required");
+            }
+        }
 
         return mentorRepository.addAvailability(profile.id, slots);
     },
