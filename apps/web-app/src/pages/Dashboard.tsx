@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { apiClient } from '../api/client';
-import type { User, Appointment, MentorProfile, Question } from '../types';
+import type { User, Appointment, Question } from '../types';
 import { Calendar, Clock, ArrowRight, MessageSquare } from 'lucide-react';
 
 const Dashboard = () => {
     const [user, setUser] = useState<User | null>(null);
     const [appointments, setAppointments] = useState<Appointment[]>([]);
-    const [mentors, setMentors] = useState<MentorProfile[]>([]);
+    const [mentors, setMentors] = useState<User[]>([]);
     const [questions, setQuestions] = useState<Question[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -66,37 +66,40 @@ const Dashboard = () => {
                 </div>
 
                 <div className="space-y-4">
-                    {appointments.length === 0 ? (
+                    {appointments.filter(apt => new Date(apt.startsAt) > new Date()).slice(0, 3).length === 0 ? (
                         <p className="text-gray-500 text-sm">No upcoming appointments.</p>
                     ) : (
-                        appointments.map((apt) => (
-                            <div key={apt.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
-                                <div className="flex items-center gap-4">
-                                    <img
-                                        src={apt.mentor?.avatarUrl}
-                                        alt={apt.mentor?.name}
-                                        className="w-12 h-12 rounded-full object-cover"
-                                    />
-                                    <div>
-                                        <h3 className="font-medium text-gray-900">{apt.mentor?.name}</h3>
-                                        <p className="text-xs text-gray-500">{apt.mentor?.department}</p>
-                                        <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
-                                            <div className="flex items-center gap-1">
-                                                <Calendar size={12} />
-                                                {new Date(apt.startsAt).toLocaleDateString()}
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                                <Clock size={12} />
-                                                {new Date(apt.startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        appointments
+                            .filter(apt => new Date(apt.startsAt) > new Date())
+                            .slice(0, 3)
+                            .map((apt) => (
+                                <div key={apt.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
+                                    <div className="flex items-center gap-4">
+                                        <img
+                                            src={apt.mentor?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${apt.mentor?.name || 'mentor'}`}
+                                            alt={apt.mentor?.name || 'Mentor'}
+                                            className="w-12 h-12 rounded-full object-cover"
+                                        />
+                                        <div>
+                                            <h3 className="font-medium text-gray-900">{apt.mentor?.name || 'Mentor'}</h3>
+                                            <p className="text-xs text-gray-500">{apt.mentor?.department || 'Department'}</p>
+                                            <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                                                <div className="flex items-center gap-1">
+                                                    <Calendar size={12} />
+                                                    {new Date(apt.startsAt).toLocaleDateString()}
+                                                </div>
+                                                <div className="flex items-center gap-1">
+                                                    <Clock size={12} />
+                                                    {new Date(apt.startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
+                                    <button className="px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors">
+                                        View
+                                    </button>
                                 </div>
-                                <button className="px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors">
-                                    View
-                                </button>
-                            </div>
-                        ))
+                            ))
                     )}
                 </div>
             </section>
@@ -112,22 +115,24 @@ const Dashboard = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {mentors.map((profile) => (
-                        <div key={profile.id} className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+                    {mentors.map((mentor) => (
+                        <div key={mentor.id} className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
                             <div className="flex items-start gap-4 mb-4">
                                 <img
-                                    src={profile.user?.avatarUrl}
-                                    alt={profile.user?.name}
+                                    src={mentor.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${mentor.name}`}
+                                    alt={mentor.name}
                                     className="w-12 h-12 rounded-full object-cover"
                                 />
                                 <div>
-                                    <h3 className="font-medium text-gray-900">{profile.user?.name}</h3>
-                                    <p className="text-xs text-blue-600 font-medium">{profile.user?.department}</p>
-                                    <p className="text-xs text-gray-500 mt-1">{profile.currentRole} at {profile.currentCompany}</p>
+                                    <h3 className="font-medium text-gray-900">{mentor.name}</h3>
+                                    <p className="text-xs text-blue-600 font-medium">{mentor.department}</p>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        {(mentor as any).mentorProfile?.currentRole} at {(mentor as any).mentorProfile?.currentCompany}
+                                    </p>
                                 </div>
                             </div>
                             <p className="text-sm text-gray-600 line-clamp-2 mb-4 h-10">
-                                {profile.bioExtended || profile.user?.bio}
+                                {(mentor as any).mentorProfile?.bioExtended || mentor.bio}
                             </p>
                             <button className="w-full py-2 text-sm font-medium text-gray-700 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200">
                                 View Profile

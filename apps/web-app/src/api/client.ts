@@ -69,7 +69,7 @@ export const apiClient = {
     },
 
     // Mentors
-    getMentorProfiles: async (): Promise<MentorProfile[]> => {
+    getMentorProfiles: async (): Promise<User[]> => {
         const response = await fetch(`${API_BASE_URL}/mentors?limit=100`, {
             headers: headers(),
         });
@@ -148,7 +148,7 @@ export const apiClient = {
     createQuestion: async (data: {
         topicId: number;
         title: string;
-        content: string;
+        body: string;
     }): Promise<Question> => {
         const response = await fetch(`${API_BASE_URL}/forum/questions`, {
             method: 'POST',
@@ -158,53 +158,22 @@ export const apiClient = {
         return handleResponse(response);
     },
 
-    createAnswer: async (questionId: number, content: string): Promise<Answer> => {
+    createAnswer: async (questionId: number, body: string): Promise<Answer> => {
         const response = await fetch(`${API_BASE_URL}/forum/questions/${questionId}/answers`, {
             method: 'POST',
             headers: headers(),
-            body: JSON.stringify({ content }),
+            body: JSON.stringify({ body }),
         });
         return handleResponse(response);
     },
 
     // Messaging
-    getConversations: async (): Promise<Conversation[]> => {
-        const response = await fetch(`${API_BASE_URL}/messages/conversations`, {
-            headers: headers(),
-        });
-        const result = await handleResponse(response);
-        return Array.isArray(result) ? result : result;
-    },
-
     createConversation: async (otherUserId: number): Promise<Conversation> => {
         const response = await fetch(`${API_BASE_URL}/messages/conversations`, {
             method: 'POST',
             headers: headers(),
             body: JSON.stringify({ otherUserId }),
         });
-        return handleResponse(response);
-    },
-
-    getMessages: async (conversationId: number): Promise<Message[]> => {
-        const response = await fetch(
-            `${API_BASE_URL}/messages/conversations/${conversationId}/messages`,
-            {
-                headers: headers(),
-            }
-        );
-        const result = await handleResponse(response);
-        return Array.isArray(result) ? result : result;
-    },
-
-    sendMessage: async (conversationId: number, content: string): Promise<Message> => {
-        const response = await fetch(
-            `${API_BASE_URL}/messages/conversations/${conversationId}/messages`,
-            {
-                method: 'POST',
-                headers: headers(),
-                body: JSON.stringify({ content }),
-            }
-        );
         return handleResponse(response);
     },
 };

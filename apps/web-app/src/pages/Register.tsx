@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { GraduationCap } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-
 import { apiClient } from '../api/client';
 
 const Register = () => {
@@ -35,10 +34,9 @@ const Register = () => {
                 password: formData.password,
                 role: formData.role,
             });
-            console.log(response);
-            if (response.data.token) {
-                localStorage.setItem('token', response.data.token);
-                navigate('/login');
+            if (response.token) {
+                localStorage.setItem('token', response.token);
+                navigate('/dashboard');
             } else {
                 setError('Registration failed: No token received');
             }

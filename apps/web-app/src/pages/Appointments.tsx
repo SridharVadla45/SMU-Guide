@@ -1,27 +1,76 @@
 import { useEffect, useState } from 'react';
 import { apiClient } from '../api/client';
 import type { Appointment } from '../types';
-import { Calendar, Clock, Video, MessageSquare, X } from 'lucide-react';
+import { Calendar, Clock, Video, MessageSquare, X, Check } from 'lucide-react';
+import { BookAppointmentModal } from '../components/BookAppointmentModal';
+import { AppointmentDetailModal } from '../components/AppointmentDetailModal';
+import { showToast } from '../components/Toast';
 
 const Appointments = () => {
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'upcoming' | 'past' | 'all'>('upcoming');
+    const [actionLoading, setActionLoading] = useState<number | null>(null);
+    const [showBookingModal, setShowBookingModal] = useState(false);
+    const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+    const [showDetailModal, setShowDetailModal] = useState(false);
+
+    const fetchAppointments = async () => {
+        try {
+            const data = await apiClient.getAppointments();
+            setAppointments(data);
+        } catch (error) {
+            console.error('Error fetching appointments:', error);
+            showToast('Failed to load appointments', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchAppointments = async () => {
-            try {
-                const data = await apiClient.getAppointmentsForUser(1); // Assume user 1
-                setAppointments(data);
-            } catch (error) {
-                console.error('Error fetching appointments:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchAppointments();
     }, []);
+
+    const handleConfirm = async (appointmentId: number) => {
+        setActionLoading(appointmentId);
+        try {
+            await fetch(`http://localhost:4000/api/appointments/${appointmentId}/confirm`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+            await fetchAppointments();
+            showToast('Appointment confirmed successfully!', 'success');
+        } catch (error) {
+            console.error('Error confirming appointment:', error);
+            showToast('Failed to confirm appointment', 'error');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handleCancel = async (appointmentId: number) => {
+        if (!confirm('Are you sure you want to cancel this appointment?')) return;
+
+        setActionLoading(appointmentId);
+        try {
+            await apiClient.cancelAppointment(appointmentId);
+            await fetchAppointments();
+            showToast('Appointment cancelled', 'info');
+        } catch (error) {
+            console.error('Error cancelling appointment:', error);
+            showToast('Failed to cancel appointment', 'error');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handleAppointmentBooked = () => {
+        showToast('Appointment booked successfully!', 'success');
+        fetchAppointments();
+    };
 
     const filteredAppointments = appointments.filter((apt) => {
         const now = new Date();
@@ -51,10 +100,19 @@ const Appointments = () => {
                     <h1 className="text-2xl font-bold text-gray-900">My Appointments</h1>
                     <p className="text-gray-500 mt-1">Manage your mentorship sessions</p>
                 </div>
-                <button className="px-4 py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors">
+                <button
+                    onClick={() => setShowBookingModal(true)}
+                    className="px-4 py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
+                >
                     Book New Appointment
                 </button>
             </div>
+
+            <BookAppointmentModal
+                isOpen={showBookingModal}
+                onClose={() => setShowBookingModal(false)}
+                onAppointmentBooked={handleAppointmentBooked}
+            />
 
             {/* Tabs */}
             <div className="flex gap-2 bg-gray-100 p-1 rounded-lg w-fit">
@@ -121,9 +179,26 @@ const Appointments = () => {
 
                                         {/* Action Buttons */}
                                         <div className="flex items-center gap-3 mt-6">
-                                            <button className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedAppointment(apt);
+                                                    setShowDetailModal(true);
+                                                }}
+                                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                                            >
                                                 View Details
                                             </button>
+
+                                            {apt.status === 'PENDING' && (
+                                                <button
+                                                    onClick={() => handleConfirm(apt.id)}
+                                                    disabled={actionLoading === apt.id}
+                                                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+                                                >
+                                                    <Check size={16} />
+                                                    {actionLoading === apt.id ? 'Confirming...' : 'Confirm'}
+                                                </button>
+                                            )}
 
                                             {apt.zoomJoinUrl && (
                                                 <a
@@ -142,10 +217,16 @@ const Appointments = () => {
                                                 Message
                                             </button>
 
-                                            <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors ml-2">
-                                                <X size={16} />
-                                                Cancel
-                                            </button>
+                                            {apt.status !== 'CANCELLED' && apt.status !== 'COMPLETED' && (
+                                                <button
+                                                    onClick={() => handleCancel(apt.id)}
+                                                    disabled={actionLoading === apt.id}
+                                                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors ml-2 disabled:opacity-50"
+                                                >
+                                                    <X size={16} />
+                                                    {actionLoading === apt.id ? 'Cancelling...' : 'Cancel'}
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -161,6 +242,14 @@ const Appointments = () => {
                     ))
                 )}
             </div>
+
+            <AppointmentDetailModal
+                isOpen={showDetailModal}
+                onClose={() => setShowDetailModal(false)}
+                appointment={selectedAppointment}
+                onConfirm={handleConfirm}
+                onCancel={handleCancel}
+            />
         </div>
     );
 };

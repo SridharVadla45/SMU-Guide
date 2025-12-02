@@ -1,27 +1,21 @@
 import { useState } from 'react';
 import { GraduationCap } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-
-import { apiClient } from '../api/client';
+import { useAuth } from '../contexts/AuthContext';
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const navigate = useNavigate();
+    const { login } = useAuth();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         try {
-            const response = await apiClient.login({ email, password });
-            console.log(response);  
-            if (response.data.token) {
-                localStorage.setItem('token', response.data.token);
-                navigate('/dashboard');
-            } else {
-                setError('Login failed: No token received');
-            }
+            await login(email, password);
+            navigate('/dashboard');
         } catch (err: any) {
             setError(err.message || 'Login failed');
         }

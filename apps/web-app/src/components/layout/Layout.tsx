@@ -5,7 +5,6 @@ import {
     Users,
     Calendar,
     MessageSquare,
-    MessageCircle,
     LogOut,
     GraduationCap,
 } from 'lucide-react';
@@ -63,7 +62,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { path: '/mentors', label: 'Mentors', icon: Users },
         { path: '/appointments', label: 'Appointments', icon: Calendar },
         { path: '/forum', label: 'Forum', icon: MessageSquare },
-        { path: '/messages', label: 'Messages', icon: MessageCircle },
     ];
 
     const handleLogout = () => {
