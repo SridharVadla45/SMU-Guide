@@ -1,7 +1,8 @@
-import { X, CreditCard } from 'lucide-react';
+import { X, CreditCard, Plus } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { apiClient } from '../api/client';
-import type { User } from '../types';
+import { CardIcon } from './CardIcon';
+import type { User, PaymentMethod } from '../types';
 
 interface BookAppointmentModalProps {
     isOpen: boolean;
@@ -24,7 +25,12 @@ export const BookAppointmentModal = ({ isOpen, onClose, mentorId: initialMentorI
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
 
-    // Mock payment state
+    // Payment state
+    const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+    const [selectedMethodId, setSelectedMethodId] = useState<number | 'new'>('new');
+    const [loadingMethods, setLoadingMethods] = useState(false);
+
+    // New card state
     const [cardNumber, setCardNumber] = useState('');
     const [expiry, setExpiry] = useState('');
     const [cvc, setCvc] = useState('');
@@ -48,6 +54,29 @@ export const BookAppointmentModal = ({ isOpen, onClose, mentorId: initialMentorI
         }
     }, [isOpen, initialMentorId]);
 
+    // Fetch payment methods when entering payment step
+    useEffect(() => {
+        if (isOpen && step === 'payment') {
+            setLoadingMethods(true);
+            apiClient.getPaymentMethods()
+                .then(methods => {
+                    setPaymentMethods(methods);
+                    if (methods.length > 0) {
+                        const defaultMethod = methods.find(m => m.isDefault);
+                        setSelectedMethodId(defaultMethod ? defaultMethod.id : methods[0].id);
+                    } else {
+                        setSelectedMethodId('new');
+                    }
+                })
+                .catch(err => {
+                    console.error('Error fetching payment methods:', err);
+                    // Don't block the user, just default to new card
+                    setSelectedMethodId('new');
+                })
+                .finally(() => setLoadingMethods(false));
+        }
+    }, [isOpen, step]);
+
     const handleDetailsSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!formData.mentorId) {
@@ -58,18 +87,97 @@ export const BookAppointmentModal = ({ isOpen, onClose, mentorId: initialMentorI
         setStep('payment');
     };
 
+    const luhnCheck = (val: string) => {
+        let checksum = 0;
+        let j = 1;
+        for (let i = val.length - 1; i >= 0; i--) {
+            let calc = 0;
+            calc = Number(val.charAt(i)) * j;
+            if (calc > 9) {
+                checksum = checksum + 1;
+                calc = calc - 10;
+            }
+            checksum = checksum + calc;
+            j = (j == 1) ? 2 : 1;
+        }
+        return (checksum % 10) == 0;
+    };
+
+    const detectCardBrand = (number: string): string => {
+        const patterns = {
+            visa: /^4/,
+            mastercard: /^5[1-5]|^2[2-7]/,
+            amex: /^3[47]/,
+            discover: /^6(?:011|5)/,
+            diners: /^3(?:0[0-5]|[68])/,
+            jcb: /^35/
+        };
+
+        for (const [brand, pattern] of Object.entries(patterns)) {
+            if (pattern.test(number)) return brand;
+        }
+        return 'unknown';
+    };
+
     const handlePaymentSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         setSubmitting(true);
 
         try {
-            // 1. Create Payment Intent (Mock)
+            // 1. If new card, save it first (Mock)
+            if (selectedMethodId === 'new') {
+                console.log('Processing new card...');
+                const [expMonthStr, expYearStr] = expiry.split('/').map(s => s.trim());
+                const expMonth = parseInt(expMonthStr);
+                let expYear = parseInt(expYearStr);
+
+                // Handle 2-digit year
+                if (expYear < 100) expYear += 2000;
+
+                console.log('Adding payment method:', { expMonth, expYear });
+
+                // Basic Validation
+                const cleanCardNumber = cardNumber.replace(/\D/g, '');
+                if (!luhnCheck(cleanCardNumber)) {
+                    throw new Error('Invalid card number');
+                }
+
+                if (!expMonth || !expYear || expMonth < 1 || expMonth > 12) {
+                    throw new Error('Invalid expiry date');
+                }
+
+                // Handle 2-digit year
+                if (expYear < 100) expYear += 2000;
+
+                // Check if expired
+                const now = new Date();
+                const currentYear = now.getFullYear();
+                const currentMonth = now.getMonth() + 1; // 0-indexed
+
+                if (expYear < currentYear || (expYear === currentYear && expMonth < currentMonth)) {
+                    throw new Error('Card has expired');
+                }
+
+                const brand = detectCardBrand(cleanCardNumber);
+
+                await apiClient.addPaymentMethod({
+                    brand: brand,
+                    last4: cleanCardNumber.slice(-4),
+                    expMonth: expMonth,
+                    expYear: expYear,
+                });
+                console.log('Payment method added successfully');
+            }
+
+            // 2. Create Payment Intent (Mock)
+            console.log('Creating payment intent...');
             // In a real app, amount would be dynamic based on mentor's rate
             const amount = 50;
             const intent = await apiClient.createPaymentIntent(amount);
 
-            // 2. Confirm Payment (Mock)
+            // 3. Confirm Payment (Mock)
+            console.log('Confirming payment...');
             // In a real app, Stripe Elements handles this securely
             await apiClient.confirmPayment(intent.paymentIntentId, amount);
 
@@ -228,48 +336,102 @@ export const BookAppointmentModal = ({ isOpen, onClose, mentorId: initialMentorI
                                 </div>
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Card Number
-                                </label>
-                                <input
-                                    type="text"
-                                    value={cardNumber}
-                                    onChange={(e) => setCardNumber(e.target.value)}
-                                    placeholder="0000 0000 0000 0000"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    required
-                                />
-                            </div>
+                            {loadingMethods ? (
+                                <div className="text-center py-4 text-gray-500">Loading payment methods...</div>
+                            ) : (
+                                <div className="space-y-3 mb-4">
+                                    {paymentMethods.map((method) => (
+                                        <div
+                                            key={method.id}
+                                            onClick={() => setSelectedMethodId(method.id)}
+                                            className={`p-3 border rounded-lg cursor-pointer flex items-center gap-3 transition-colors ${selectedMethodId === method.id
+                                                ? 'border-blue-500 bg-blue-50'
+                                                : 'border-gray-200 hover:border-blue-300'
+                                                }`}
+                                        >
+                                            <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${selectedMethodId === method.id ? 'border-blue-600' : 'border-gray-400'
+                                                }`}>
+                                                {selectedMethodId === method.id && (
+                                                    <div className="w-2 h-2 rounded-full bg-blue-600" />
+                                                )}
+                                            </div>
+                                            <CardIcon brand={method.brand} className="w-8 h-5" />
+                                            <div className="flex-1">
+                                                <p className="text-sm font-medium text-gray-900 capitalize">
+                                                    {method.brand} •••• {method.last4}
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                    Expires {method.expMonth}/{method.expYear}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Expiry Date
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={expiry}
-                                        onChange={(e) => setExpiry(e.target.value)}
-                                        placeholder="MM/YY"
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        required
-                                    />
+                                    <div
+                                        onClick={() => setSelectedMethodId('new')}
+                                        className={`p-3 border rounded-lg cursor-pointer flex items-center gap-3 transition-colors ${selectedMethodId === 'new'
+                                            ? 'border-blue-500 bg-blue-50'
+                                            : 'border-gray-200 hover:border-blue-300'
+                                            }`}
+                                    >
+                                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${selectedMethodId === 'new' ? 'border-blue-600' : 'border-gray-400'
+                                            }`}>
+                                            {selectedMethodId === 'new' && (
+                                                <div className="w-2 h-2 rounded-full bg-blue-600" />
+                                            )}
+                                        </div>
+                                        <Plus className="text-gray-600 w-5 h-5" />
+                                        <span className="text-sm font-medium text-gray-900">Add New Card</span>
+                                    </div>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        CVC
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={cvc}
-                                        onChange={(e) => setCvc(e.target.value)}
-                                        placeholder="123"
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        required
-                                    />
+                            )}
+
+                            {selectedMethodId === 'new' && (
+                                <div className="space-y-4 pt-2 border-t border-gray-100">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Card Number
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={cardNumber}
+                                            onChange={(e) => setCardNumber(e.target.value)}
+                                            placeholder="0000 0000 0000 0000"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            required={selectedMethodId === 'new'}
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Expiry Date
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={expiry}
+                                                onChange={(e) => setExpiry(e.target.value)}
+                                                placeholder="MM/YY"
+                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                required={selectedMethodId === 'new'}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                CVC
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={cvc}
+                                                onChange={(e) => setCvc(e.target.value)}
+                                                placeholder="123"
+                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                required={selectedMethodId === 'new'}
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             <div className="flex justify-end gap-3 pt-4">
                                 <button

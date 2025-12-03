@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/client';
 import type { User } from '../types';
 import { Mail, BookOpen, Calendar, MapPin } from 'lucide-react';
 import { API_URL } from '../config';
 
 const Profile = () => {
+    const navigate = useNavigate();
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -48,7 +50,7 @@ const Profile = () => {
                         />
                         <div className="flex gap-3">
                             <button
-                                onClick={() => window.location.href = '/billing'}
+                                onClick={() => navigate('/billing')}
                                 className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                             >
                                 Billing

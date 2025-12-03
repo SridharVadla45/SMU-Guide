@@ -8,6 +8,7 @@ import type {
     Answer,
     Conversation,
     Message,
+    PaymentMethod,
 } from '../types';
 
 const getAuthToken = () => localStorage.getItem('token');
@@ -227,7 +228,7 @@ export const apiClient = {
     },
 
     // Payment Methods
-    getPaymentMethods: async () => {
+    getPaymentMethods: async (): Promise<PaymentMethod[]> => {
         const response = await fetch(`${API_BASE_URL}/payment-methods`, {
             headers: headers(),
         });

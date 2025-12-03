@@ -5,6 +5,7 @@ import { Calendar, Clock, Video, MessageSquare, X, Check } from 'lucide-react';
 import { BookAppointmentModal } from '../components/BookAppointmentModal';
 import { AppointmentDetailModal } from '../components/AppointmentDetailModal';
 import { showToast } from '../components/Toast';
+import { API_URL } from '../config';
 
 const Appointments = () => {
     const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -151,7 +152,7 @@ const Appointments = () => {
                             <div className="flex items-start justify-between">
                                 <div className="flex gap-4">
                                     <img
-                                        src={apt.mentor?.avatarUrl}
+                                        src={apt.mentor?.avatarUrl ? (apt.mentor.avatarUrl.startsWith('http') ? apt.mentor.avatarUrl : `${API_URL}${apt.mentor.avatarUrl}`) : `https://ui-avatars.com/api/?name=${encodeURIComponent(apt.mentor?.name || 'Mentor')}&background=random&color=fff`}
                                         alt={apt.mentor?.name}
                                         className="w-12 h-12 rounded-full object-cover border border-gray-100"
                                     />

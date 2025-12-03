@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/client';
 import type { User, Appointment, Question } from '../types';
 import { Calendar, Clock, ArrowRight, MessageSquare } from 'lucide-react';
 import { API_URL } from '../config';
 
 const Dashboard = () => {
+    const navigate = useNavigate();
     const [user, setUser] = useState<User | null>(null);
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [mentors, setMentors] = useState<User[]>([]);
@@ -63,7 +65,12 @@ const Dashboard = () => {
                         <h2 className="text-lg font-semibold text-gray-900">Upcoming Appointments</h2>
                         <p className="text-sm text-gray-500">Your scheduled mentorship sessions</p>
                     </div>
-                    <button className="text-sm font-medium text-blue-600 hover:text-blue-700">View All</button>
+                    <button
+                        onClick={() => navigate('/appointments')}
+                        className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                    >
+                        View All
+                    </button>
                 </div>
 
                 <div className="space-y-4">
@@ -77,7 +84,7 @@ const Dashboard = () => {
                                 <div key={apt.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
                                     <div className="flex items-center gap-4">
                                         <img
-                                            src={apt.mentor?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${apt.mentor?.name || 'mentor'}`}
+                                            src={apt.mentor?.avatarUrl ? (apt.mentor.avatarUrl.startsWith('http') ? apt.mentor.avatarUrl : `${API_URL}${apt.mentor.avatarUrl}`) : `https://ui-avatars.com/api/?name=${encodeURIComponent(apt.mentor?.name || 'Mentor')}&background=random&color=fff`}
                                             alt={apt.mentor?.name || 'Mentor'}
                                             className="w-12 h-12 rounded-full object-cover"
                                         />
@@ -96,7 +103,10 @@ const Dashboard = () => {
                                             </div>
                                         </div>
                                     </div>
-                                    <button className="px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors">
+                                    <button
+                                        onClick={() => navigate('/appointments')}
+                                        className="px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors"
+                                    >
                                         View
                                     </button>
                                 </div>
@@ -158,7 +168,12 @@ const Dashboard = () => {
                         <h2 className="text-lg font-semibold text-gray-900">Forum Highlights</h2>
                         <p className="text-sm text-gray-500">Recent questions from the community</p>
                     </div>
-                    <button className="text-sm font-medium text-blue-600 hover:text-blue-700">Go to Forum</button>
+                    <button
+                        onClick={() => navigate('/forum')}
+                        className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                    >
+                        Go to Forum
+                    </button>
                 </div>
 
                 <div className="space-y-4">

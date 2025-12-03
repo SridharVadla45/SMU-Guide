@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { apiClient } from '../api/client';
 import { CreditCard, DollarSign, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { CardIcon } from '../components/CardIcon';
 
 interface Payment {
     id: number;
@@ -45,18 +46,74 @@ const Billing = () => {
         fetchData();
     }, []);
 
+    const luhnCheck = (val: string) => {
+        let checksum = 0;
+        let j = 1;
+        for (let i = val.length - 1; i >= 0; i--) {
+            let calc = 0;
+            calc = Number(val.charAt(i)) * j;
+            if (calc > 9) {
+                checksum = checksum + 1;
+                calc = calc - 10;
+            }
+            checksum = checksum + calc;
+            j = (j == 1) ? 2 : 1;
+        }
+        return (checksum % 10) == 0;
+    };
+
+    const detectCardBrand = (number: string): string => {
+        const patterns = {
+            visa: /^4/,
+            mastercard: /^5[1-5]|^2[2-7]/,
+            amex: /^3[47]/,
+            discover: /^6(?:011|5)/,
+            diners: /^3(?:0[0-5]|[68])/,
+            jcb: /^35/
+        };
+
+        for (const [brand, pattern] of Object.entries(patterns)) {
+            if (pattern.test(number)) return brand;
+        }
+        return 'unknown';
+    };
+
     const handleAddCard = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            // Mock card processing - extract last4 and expiry
-            const last4 = newCard.number.slice(-4);
+            // Basic Validation
+            const cleanCardNumber = newCard.number.replace(/\D/g, '');
+            if (!luhnCheck(cleanCardNumber)) {
+                alert('Invalid card number');
+                return;
+            }
+
             const [expMonth, expYear] = newCard.expiry.split('/').map(n => parseInt(n));
+            if (!expMonth || !expYear || expMonth < 1 || expMonth > 12) {
+                alert('Invalid expiry date');
+                return;
+            }
+
+            const fullExpYear = expYear < 100 ? 2000 + expYear : expYear;
+
+            // Check if expired
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth() + 1; // 0-indexed
+
+            if (fullExpYear < currentYear || (fullExpYear === currentYear && expMonth < currentMonth)) {
+                alert('Card has expired');
+                return;
+            }
+
+            const brand = detectCardBrand(cleanCardNumber);
+            const last4 = cleanCardNumber.slice(-4);
 
             await apiClient.addPaymentMethod({
-                brand: 'visa', // Mock brand
+                brand: brand,
                 last4,
-                expMonth: expMonth || 12,
-                expYear: expYear ? 2000 + expYear : 2025
+                expMonth: expMonth,
+                expYear: fullExpYear
             });
 
             setIsAddCardOpen(false);
@@ -64,6 +121,7 @@ const Billing = () => {
             fetchData(); // Refresh list
         } catch (error) {
             console.error('Error adding card:', error);
+            alert('Failed to add card');
         }
     };
 
@@ -126,9 +184,7 @@ const Billing = () => {
                         paymentMethods.map((method) => (
                             <div key={method.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-10 h-6 bg-gray-800 rounded flex items-center justify-center text-white text-xs font-bold uppercase">
-                                        {method.brand}
-                                    </div>
+                                    <CardIcon brand={method.brand} className="w-12 h-8" />
                                     <div>
                                         <p className="text-sm font-medium text-gray-900 capitalize">{method.brand} ending in {method.last4}</p>
                                         <p className="text-xs text-gray-500">Expires {method.expMonth}/{method.expYear}</p>

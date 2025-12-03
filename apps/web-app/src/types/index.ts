@@ -97,3 +97,13 @@ export interface Message {
   readAt?: string;
   sender?: User;
 }
+
+export interface PaymentMethod {
+  id: number;
+  type: string;
+  brand: string;
+  last4: string;
+  expMonth: number;
+  expYear: number;
+  isDefault: boolean;
+}
