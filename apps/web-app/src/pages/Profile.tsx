@@ -4,11 +4,13 @@ import { apiClient } from '../api/client';
 import type { User } from '../types';
 import { Mail, BookOpen, Calendar, MapPin } from 'lucide-react';
 import { API_URL } from '../config';
+import EditProfileModal from '../components/EditProfileModal';
 
 const Profile = () => {
     const navigate = useNavigate();
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -24,6 +26,11 @@ const Profile = () => {
 
         fetchUser();
     }, []);
+
+    const handleUpdateProfile = (updatedUser: User) => {
+        setUser(updatedUser);
+        setIsEditModalOpen(false);
+    };
 
     if (loading) {
         return <div className="flex items-center justify-center h-full">Loading...</div>;
@@ -55,7 +62,10 @@ const Profile = () => {
                             >
                                 Billing
                             </button>
-                            <button className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                            <button
+                                onClick={() => setIsEditModalOpen(true)}
+                                className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
                                 Edit Profile
                             </button>
                         </div>
@@ -68,7 +78,7 @@ const Profile = () => {
                         <div className="mt-6 space-y-4">
                             <div className="flex items-center gap-2 text-gray-600">
                                 <Mail size={18} />
-                                <span>{user.email}</span>
+                                <span className="break-all">{user.email}</span>
                             </div>
                             {user.department && (
                                 <div className="flex items-center gap-2 text-gray-600">
@@ -95,6 +105,13 @@ const Profile = () => {
                     </div>
                 </div>
             </div>
+
+            <EditProfileModal
+                user={user}
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                onUpdate={handleUpdateProfile}
+            />
         </div>
     );
 };
