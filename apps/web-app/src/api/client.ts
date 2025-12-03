@@ -7,7 +7,6 @@ import type {
     Question,
     Answer,
     Conversation,
-    Message,
     PaymentMethod,
 } from '../types';
 

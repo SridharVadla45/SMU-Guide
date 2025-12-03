@@ -1,6 +1,6 @@
 import { X } from 'lucide-react';
 import type { Appointment } from '../types';
-import { Calendar, Clock, Video, User, FileText } from 'lucide-react';
+import { Calendar, Clock, Video, FileText } from 'lucide-react';
 
 interface AppointmentDetailModalProps {
     isOpen: boolean;
@@ -105,15 +105,7 @@ export const AppointmentDetailModal = ({ isOpen, onClose, appointment, onCancel,
                             </div>
                         )}
 
-                        {appointment.notes && (
-                            <div className="flex items-start gap-3">
-                                <FileText className="text-gray-400 mt-1" size={20} />
-                                <div>
-                                    <p className="text-sm font-medium text-gray-700">Notes</p>
-                                    <p className="text-gray-900 whitespace-pre-wrap">{appointment.notes}</p>
-                                </div>
-                            </div>
-                        )}
+
 
                         {appointment.zoomJoinUrl && (
                             <div className="flex items-start gap-3">
