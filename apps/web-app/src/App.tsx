@@ -12,6 +12,7 @@ import Forum from './pages/Forum';
 import Profile from './pages/Profile';
 import MentorProfilePage from './pages/MentorProfile';
 import QuestionDetail from './pages/QuestionDetail';
+import Billing from './pages/Billing';
 
 function App() {
   return (
@@ -31,7 +32,9 @@ function App() {
             <Route path="/appointments" element={<Appointments />} />
             <Route path="/forum" element={<Forum />} />
             <Route path="/forum/questions/:id" element={<QuestionDetail />} />
+            <Route path="/forum/questions/:id" element={<QuestionDetail />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/billing" element={<Billing />} />
           </Route>
         </Routes>
       </Router>

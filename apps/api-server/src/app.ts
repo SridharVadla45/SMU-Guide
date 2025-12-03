@@ -8,10 +8,37 @@ import { appointmentRouter } from "./routes/appointment.routes.js";
 import { forumRouter } from "./routes/forum.routes.js";
 import { userRouter } from "./routes/user.routes.js";
 import { paymentRouter } from "./routes/payment.routes.js";
+import paymentMethodRouter from "./routes/payment-method.routes.js";
 import { globalErrorHandler } from "./errors/errorHandler.js";
 import { ApiError, Errors } from "./errors/ApiError.js";
 
+import { prisma } from "./lib/prisma.js";
+
 const app = express();
+
+// Auto-migration to ensure PaymentMethod table exists
+(async () => {
+  try {
+    await prisma.$executeRawUnsafe(`
+            CREATE TABLE IF NOT EXISTS PaymentMethod (
+                id INTEGER NOT NULL AUTO_INCREMENT,
+                userId INTEGER NOT NULL,
+                type VARCHAR(191) NOT NULL DEFAULT 'card',
+                brand VARCHAR(191) NOT NULL,
+                last4 VARCHAR(191) NOT NULL,
+                expMonth INTEGER NOT NULL,
+                expYear INTEGER NOT NULL,
+                isDefault BOOLEAN NOT NULL DEFAULT false,
+                createdAt DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+                PRIMARY KEY (id),
+                INDEX PaymentMethod_userId_idx (userId)
+            ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+        `);
+    console.log('Database: PaymentMethod table ensured.');
+  } catch (e) {
+    console.error('Database: Auto-migration failed:', e);
+  }
+})();
 
 // Global middlewares
 app.use(cors());
@@ -26,6 +53,7 @@ app.use("/api/appointments", appointmentRouter);
 app.use("/api/forum", forumRouter);
 app.use("/api/users", userRouter);
 app.use("/api/payments", paymentRouter);
+app.use("/api/payment-methods", paymentMethodRouter);
 
 
 

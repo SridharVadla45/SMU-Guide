@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/client';
 import { Search, Filter } from 'lucide-react';
+import { API_URL } from '../config';
 
 // Backend returns User objects with mentorProfile nested
 interface MentorUser {
@@ -158,7 +159,7 @@ const Mentors = () => {
                     <div key={mentor.id} className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col">
                         <div className="flex items-start gap-4 mb-4">
                             <img
-                                src={mentor.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${mentor.name}`}
+                                src={mentor.avatarUrl ? (mentor.avatarUrl.startsWith('http') ? mentor.avatarUrl : `${API_URL}${mentor.avatarUrl}`) : `https://ui-avatars.com/api/?name=${encodeURIComponent(mentor.name)}&background=random&color=fff`}
                                 alt={mentor.name}
                                 className="w-12 h-12 rounded-full object-cover border border-gray-100"
                             />

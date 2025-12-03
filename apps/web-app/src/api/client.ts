@@ -26,7 +26,10 @@ const headers = () => {
 const handleResponse = async (response: Response) => {
     if (!response.ok) {
         const error = await response.json().catch(() => ({ message: 'Something went wrong' }));
-        throw new Error(error.message || response.statusText);
+        const errorMessage = error.details
+            ? `${error.message}: ${error.details}`
+            : (error.message || response.statusText);
+        throw new Error(errorMessage);
     }
     const json = await response.json();
     // Backend returns {data: ...} or {success: true, data: ...}
@@ -193,6 +196,49 @@ export const apiClient = {
             method: 'POST',
             headers: headers(),
             body: JSON.stringify({ otherUserId }),
+        });
+        return handleResponse(response);
+    },
+
+    // Payments
+    createPaymentIntent: async (amount: number, appointmentId?: number) => {
+        const response = await fetch(`${API_BASE_URL}/payments/create-intent`, {
+            method: 'POST',
+            headers: headers(),
+            body: JSON.stringify({ amount, appointmentId }),
+        });
+        return handleResponse(response);
+    },
+
+    confirmPayment: async (paymentIntentId: string, amount: number, appointmentId?: number) => {
+        const response = await fetch(`${API_BASE_URL}/payments/confirm`, {
+            method: 'POST',
+            headers: headers(),
+            body: JSON.stringify({ paymentIntentId, amount, appointmentId }),
+        });
+        return handleResponse(response);
+    },
+
+    getUserPayments: async () => {
+        const response = await fetch(`${API_BASE_URL}/payments`, {
+            headers: headers(),
+        });
+        return handleResponse(response);
+    },
+
+    // Payment Methods
+    getPaymentMethods: async () => {
+        const response = await fetch(`${API_BASE_URL}/payment-methods`, {
+            headers: headers(),
+        });
+        return handleResponse(response);
+    },
+
+    addPaymentMethod: async (data: { brand: string; last4: string; expMonth: number; expYear: number }) => {
+        const response = await fetch(`${API_BASE_URL}/payment-methods`, {
+            method: 'POST',
+            headers: headers(),
+            body: JSON.stringify(data),
         });
         return handleResponse(response);
     },

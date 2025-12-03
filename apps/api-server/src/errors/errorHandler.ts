@@ -33,5 +33,6 @@ export const globalErrorHandler = (
     success: false,
     message,
     code,
+    details: (err as any)?.message || String(err),
   });
 };

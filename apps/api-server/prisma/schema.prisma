@@ -60,11 +60,26 @@ model User {
   // Payments
   stripeCustomerId String?
   payments         Payment[]
+  paymentMethods   PaymentMethod[]
 }
 
 // =========================
-// Payments
+// Payments & Methods
 // =========================
+
+model PaymentMethod {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  type      String   @default("card") // card
+  brand     String   // visa, mastercard
+  last4     String
+  expMonth  Int
+  expYear   Int
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
 
 enum PaymentStatus {
   PENDING

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { apiClient } from '../api/client';
 import type { User, Appointment, Question } from '../types';
 import { Calendar, Clock, ArrowRight, MessageSquare } from 'lucide-react';
+import { API_URL } from '../config';
 
 const Dashboard = () => {
     const [user, setUser] = useState<User | null>(null);
@@ -111,7 +112,12 @@ const Dashboard = () => {
                         <h2 className="text-lg font-semibold text-gray-900">Suggested Mentors</h2>
                         <p className="text-sm text-gray-500">Connect with experienced professionals</p>
                     </div>
-                    <button className="text-sm font-medium text-blue-600 hover:text-blue-700">Browse All</button>
+                    <button
+                        onClick={() => window.location.href = '/mentors'}
+                        className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                    >
+                        Browse All
+                    </button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -119,7 +125,7 @@ const Dashboard = () => {
                         <div key={mentor.id} className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
                             <div className="flex items-start gap-4 mb-4">
                                 <img
-                                    src={mentor.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${mentor.name}`}
+                                    src={mentor.avatarUrl ? (mentor.avatarUrl.startsWith('http') ? mentor.avatarUrl : `${API_URL}${mentor.avatarUrl}`) : `https://ui-avatars.com/api/?name=${encodeURIComponent(mentor.name)}&background=random&color=fff`}
                                     alt={mentor.name}
                                     className="w-12 h-12 rounded-full object-cover"
                                 />
@@ -134,7 +140,10 @@ const Dashboard = () => {
                             <p className="text-sm text-gray-600 line-clamp-2 mb-4 h-10">
                                 {(mentor as any).mentorProfile?.bioExtended || mentor.bio}
                             </p>
-                            <button className="w-full py-2 text-sm font-medium text-gray-700 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200">
+                            <button
+                                onClick={() => window.location.href = `/mentors/${mentor.id}`}
+                                className="w-full py-2 text-sm font-medium text-gray-700 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
+                            >
                                 View Profile
                             </button>
                         </div>

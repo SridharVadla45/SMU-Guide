@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { apiClient } from '../api/client';
 import type { User } from '../types';
 import { Mail, BookOpen, Calendar, MapPin } from 'lucide-react';
+import { API_URL } from '../config';
 
 const Profile = () => {
     const [user, setUser] = useState<User | null>(null);
@@ -41,13 +42,21 @@ const Profile = () => {
                 <div className="px-8 pb-8">
                     <div className="relative flex justify-between items-end -mt-12 mb-6">
                         <img
-                            src={user.avatarUrl}
+                            src={user.avatarUrl ? (user.avatarUrl.startsWith('http') ? user.avatarUrl : `${API_URL}${user.avatarUrl}`) : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&color=fff`}
                             alt={user.name}
                             className="w-24 h-24 rounded-full border-4 border-white bg-white object-cover"
                         />
-                        <button className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-                            Edit Profile
-                        </button>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => window.location.href = '/billing'}
+                                className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                                Billing
+                            </button>
+                            <button className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                                Edit Profile
+                            </button>
+                        </div>
                     </div>
 
                     <div>

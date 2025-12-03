@@ -1,21 +1,27 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/client';
-import type { MentorProfile } from '../types';
+import type { MentorProfile, User } from '../types';
 import { Briefcase, GraduationCap, Building, ArrowLeft, Calendar } from 'lucide-react';
+import { API_URL } from '../config';
+import { BookAppointmentModal } from '../components/BookAppointmentModal';
 
 const MentorProfilePage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const [profile, setProfile] = useState<MentorProfile | null>(null);
+    // The backend returns a User object which contains the mentorProfile
+    const [profile, setProfile] = useState<User & { mentorProfile?: MentorProfile } | null>(null);
     const [loading, setLoading] = useState(true);
+
+    const [isBookModalOpen, setIsBookModalOpen] = useState(false);
 
     useEffect(() => {
         const fetchProfile = async () => {
             if (!id) return;
             try {
+                // Cast the response to the correct type
                 const data = await apiClient.getMentorProfileById(parseInt(id));
-                setProfile(data || null);
+                setProfile(data as any);
             } catch (error) {
                 console.error('Error fetching mentor profile:', error);
             } finally {
@@ -50,28 +56,31 @@ const MentorProfilePage = () => {
                 <div className="px-8 pb-8">
                     <div className="relative flex justify-between items-end -mt-12 mb-6">
                         <img
-                            src={profile.user?.avatarUrl}
-                            alt={profile.user?.name}
+                            src={profile.avatarUrl ? (profile.avatarUrl.startsWith('http') ? profile.avatarUrl : `${API_URL}${profile.avatarUrl}`) : `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}&background=random&color=fff`}
+                            alt={profile.name}
                             className="w-24 h-24 rounded-full border-4 border-white bg-white object-cover"
                         />
-                        <button className="px-6 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors shadow-sm">
+                        <button
+                            onClick={() => setIsBookModalOpen(true)}
+                            className="px-6 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors shadow-sm"
+                        >
                             Book Appointment
                         </button>
                     </div>
 
                     <div>
                         <div className="flex items-center gap-3 mb-1">
-                            <h1 className="text-2xl font-bold text-gray-900">{profile.user?.name}</h1>
-                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${profile.user?.role === 'PROFESSOR'
-                                    ? 'bg-purple-50 text-purple-700'
-                                    : 'bg-blue-50 text-blue-700'
+                            <h1 className="text-2xl font-bold text-gray-900">{profile.name}</h1>
+                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${profile.role === 'PROFESSOR'
+                                ? 'bg-purple-50 text-purple-700'
+                                : 'bg-blue-50 text-blue-700'
                                 }`}>
-                                {profile.user?.role === 'PROFESSOR' ? 'Professor' : 'Alumni'}
+                                {profile.role === 'PROFESSOR' ? 'Professor' : 'Alumni'}
                             </span>
                         </div>
 
                         <p className="text-gray-500 font-medium mb-6">
-                            {profile.currentRole} at {profile.currentCompany}
+                            {profile.mentorProfile?.currentRole} at {profile.mentorProfile?.currentCompany}
                         </p>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -79,21 +88,21 @@ const MentorProfilePage = () => {
                                 <Building size={20} className="text-gray-400" />
                                 <div>
                                     <p className="text-xs text-gray-500 uppercase font-semibold">Department</p>
-                                    <p className="text-sm font-medium text-gray-900">{profile.user?.department}</p>
+                                    <p className="text-sm font-medium text-gray-900">{profile.department}</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3 text-gray-600 bg-gray-50 p-3 rounded-lg">
                                 <Briefcase size={20} className="text-gray-400" />
                                 <div>
                                     <p className="text-xs text-gray-500 uppercase font-semibold">Company</p>
-                                    <p className="text-sm font-medium text-gray-900">{profile.currentCompany || 'N/A'}</p>
+                                    <p className="text-sm font-medium text-gray-900">{profile.mentorProfile?.currentCompany || 'N/A'}</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3 text-gray-600 bg-gray-50 p-3 rounded-lg">
                                 <GraduationCap size={20} className="text-gray-400" />
                                 <div>
                                     <p className="text-xs text-gray-500 uppercase font-semibold">Graduation</p>
-                                    <p className="text-sm font-medium text-gray-900">{profile.graduationYear || 'N/A'}</p>
+                                    <p className="text-sm font-medium text-gray-900">{profile.mentorProfile?.graduationYear || 'N/A'}</p>
                                 </div>
                             </div>
                         </div>
@@ -102,7 +111,7 @@ const MentorProfilePage = () => {
                             <section>
                                 <h2 className="text-lg font-semibold text-gray-900 mb-3">About</h2>
                                 <p className="text-gray-600 leading-relaxed">
-                                    {profile.bioExtended || profile.user?.bio || "No bio available."}
+                                    {profile.mentorProfile?.bioExtended || profile.bio || "No bio available."}
                                 </p>
                             </section>
 
@@ -122,6 +131,13 @@ const MentorProfilePage = () => {
                     </div>
                 </div>
             </div>
+
+            <BookAppointmentModal
+                isOpen={isBookModalOpen}
+                onClose={() => setIsBookModalOpen(false)}
+                mentorId={profile.id}
+                mentorName={profile.name}
+            />
         </div>
     );
 };
