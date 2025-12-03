@@ -15,7 +15,7 @@
   "private": true,
   "workspaces": [
     "apps/api-server",
-    "apps/web-server"
+    "apps/web-app"
   ],
   "scripts": {}
 }
